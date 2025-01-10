@@ -1,0 +1,27 @@
+/* src/components/InputTag.css */
+
+.input-tag {
+  width: 150px;
+  height: 50px;
+  background-color: #9e9e9e; /* Changed from #e0e0e0 to primary grey */
+  margin: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 5px;
+  font-weight: bold;
+  color: #ffffff; /* White text for contrast */
+  transition: background-color 0.3s, color 0.3s;
+  border: 1px solid #a0a0a0; /* Medium grey border */
+}
+
+.input-tag.selected {
+  background-color: #757575; /* Darker grey for selected */
+  color: #ffffff; /* White text for contrast */
+  border: 1px solid #757575; /* Matching border */
+}
+
+.input-tag:hover {
+  background-color: #a0a0a0; /* Slightly darker on hover */
+}

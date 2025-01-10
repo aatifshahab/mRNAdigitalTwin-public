@@ -1,0 +1,43 @@
+/* src/components/Membrane/Membrane.module.css */
+
+.membrane-container {
+  background-color: lightgray;
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+
+}
+
+.membrane-container h1 {
+  margin: 0px;
+  color: #333;
+}
+
+/* Navigation Buttons (top-right) */
+.navigation-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 50px;
+  margin-bottom: 10px;
+  position: absolute;
+  right: 50px;
+  top: 15px;
+}
+
+.navigation-buttons button {
+  padding: 3px 0;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.navigation-buttons button:hover {
+  background-color: #575757;
+}
+

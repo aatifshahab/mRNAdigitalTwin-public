@@ -1,0 +1,47 @@
+/* src/components/CCTC/CCTCGraphs/CCTCGraphs.css */
+
+.cctc-graphs {
+  background-color: #d3d3d3; /* Gray background */
+  padding: 15px;
+  border-radius: 5px;
+  border: 0px solid #a0a0a0; /* Medium gray border */
+  box-shadow: 0 0px 0px rgba(0, 0, 0, 0.1);
+  position: relative;
+  left:-100px;
+  top: 20px;
+}
+
+.cctc-graphs h2 {
+  text-align: center;
+  color: #333333;
+  margin-bottom: 15px;
+}
+
+.cctc-graph-sections {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  
+  
+}
+
+.graph-section {
+  flex: 1;
+  min-width: 500px; /* Prevent graphs from becoming too narrow */
+  height: 300px; /* Set a fixed height for graphs */
+
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .cctc-graph-sections {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .graph-section {
+    width: 100%;
+    max-width: 600px;
+    height: 300px;
+  }
+}

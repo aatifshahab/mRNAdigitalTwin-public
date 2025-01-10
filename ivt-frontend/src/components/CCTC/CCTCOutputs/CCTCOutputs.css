@@ -1,0 +1,42 @@
+/* src/components/CCTC/CCTCOutputs/CCTCOutputs.css */
+
+.cctc-outputs {
+  background-color: #d3d3d3; /* Gray background */
+  padding: 15px;
+  border-radius: 2px;
+  border: 1px solid #a0a0a0; /* Medium grey border */
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+  
+  position: relative;
+  left: -35px;
+  top: 260px;
+  
+  
+}
+
+.cctc-outputs h2 {
+  text-align: center;
+  color: #333333;
+  margin-bottom: 15px;
+}
+
+.cctc-output-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  
+}
+
+
+.cctc-output-item {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between the label and value */
+}
+
+.cctc-output-value {
+  font-size: 18px;
+  color: #333333; /* You can adjust the color as needed */
+  font-weight: bold;
+}
+

@@ -1,0 +1,2 @@
+﻿Species,Times (hrs),T7RNAP (nM),DNA (nM),ATP (mM),UTP (mM),CTP (mM),GTP (mM),Cap (mM),Mg (mM),PPiase (U/uL),Buffer (mM),DTT (mM),Spermidine (mM),NA,NU,NC,NG,Na4PPi (mM),RNA yield (uM),RNA St Dev (uM)
+atp,0.1,100,200,1.75,1.75,1.75,1.75,0,11,0.002,40,1,1,444,444,444,444,1.00E-09,0,0

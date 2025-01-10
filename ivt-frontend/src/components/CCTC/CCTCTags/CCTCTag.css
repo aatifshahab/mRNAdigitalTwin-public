@@ -1,0 +1,57 @@
+/* src/components/CCTC/CCTCTags/CCTCTag.css */
+
+.cctc-tag {
+  display: flex;
+  align-items: center;
+  margin: 5px 0;
+}
+
+.cctc-tag-label {
+  width: 50px; /* Set consistent width for tags */
+  height: 25px; /* Set a fixed height */
+  padding: 8px 16px;
+  background-color: gray; /* Default grey button */
+  color: #000000; /* Black text */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  user-select: none;
+  text-align: center; /* Center-align text within the tag */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Modify font properties here */
+  font-size: 18px; /* Set the font size (adjust as needed) */
+  font-weight: bold;
+}
+.cctc-tag-label.selected {
+  background-color: #87cefa; /* Light blue */
+  color: #ffffff; /* White text */
+}
+
+.cctc-tag-label.read-only {
+  background-color: #a0a0a0; /* Medium gray for read-only */
+  cursor: default;
+}
+
+.cctc-tag-label.read-only:hover {
+  background-color: #a0a0a0; /* No change on hover */
+}
+
+.cctc-tag-label:hover:not(.read-only) {
+  background-color: #8c8c8c; /* Slightly darker on hover */
+}
+
+.cctc-tag-value {
+  margin-left: 10px;
+  display: flex;
+  flex-direction: column;
+
+}
+
+.cctc-tag-value span {
+  font-size: 18px;
+  font-weight: bold;
+  color: black; /* Medium gray text */
+}

@@ -1,0 +1,20 @@
+/* src/components/Membrane/MembraneFigure/MembraneFigure.module.css */
+.figureContainer {
+  width: 300px;
+  height: 200px;
+  background-color: #ffffff;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-left: 900px;
+  margin-top: 70px;
+}
+
+.placeholder {
+  margin-top: 10px;
+  min-height: 100px;
+  border: 1px dashed #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

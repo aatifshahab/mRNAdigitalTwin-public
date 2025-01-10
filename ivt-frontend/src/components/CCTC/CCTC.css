@@ -1,0 +1,137 @@
+/* src/components/CCTC/CCTC.css */
+
+.cctc-container {
+  padding: 20px;
+  background-color: lightgray; /* Light gray background to match IVT */
+  min-height: 100vh; /* Full viewport height */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%; /* Ensure full width */
+}
+
+.cctc-container h1 {
+  margin-bottom: 20px;
+  color: #333333;
+}
+
+.navigation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.navigation-buttons button {
+  padding: 10px 20px;
+  background-color: #333333; /* Dark gray */
+  color: #ffffff; /* White text */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.navigation-buttons button:hover {
+  background-color: #555555; /* Slightly lighter on hover */
+}
+
+.cctc-top-section,
+.cctc-bottom-section {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 100%;
+  max-width: 1400px; /* Adjust based on desired width */
+  margin-bottom: 20px;
+}
+
+.cctc-top-section {
+  flex: 2;
+}
+
+.cctc-bottom-section {
+  flex: 1;
+}
+
+
+.cctc-figure-wrapper {
+  flex: 1.5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.run-unit-button {
+  margin-bottom: 20px;
+}
+
+.run-unit-button button {
+  padding: 12px 30px;
+  background-color: gray; /* Green */
+  color: black;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.run-unit-button button:hover {
+  background-color: gray; /* Darker green on hover */
+}
+
+.error-message {
+  color: red;
+  margin-top: 20px;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* Responsive Design */
+
+@media (max-width: 1200px) {
+  .cctc-top-section {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .cctc-figure-wrapper {
+    margin: 20px 0;
+  }
+
+  .cctc-bottom-section {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .cctc-graph-sections {
+    flex-direction: column;
+  }
+
+  .cctc-graph-sections .graph-section {
+    width: 100%;
+    max-width: 600px;
+    height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .navigation-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .navigation-buttons button {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .run-unit-button button {
+    width: 100%;
+    max-width: 300px;
+  }
+}

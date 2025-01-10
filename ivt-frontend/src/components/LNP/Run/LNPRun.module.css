@@ -1,0 +1,28 @@
+/* src/components/LNP/Run/LNPRun.module.css */
+
+.runContainer {
+  margin-top: 20px;
+  text-align: center;
+  position: absolute;
+  top:1000px;
+}
+
+.runButton {
+  padding: 10px 20px;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.runButton:hover:not(:disabled) {
+  background-color: #575757;
+}
+
+.runButton:disabled {
+  background-color: #888;
+  cursor: not-allowed;
+}
