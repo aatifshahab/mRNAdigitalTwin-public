@@ -1,0 +1,57 @@
+%====================================================================================================================
+% Manual for using the software in ContLyo
+% Created by Prakitr Srisuma
+%====================================================================================================================
+
+%%% Adding to Path
+First, add every folder to Path before running any simulation.
+addpath('Input Data', 'Model Equations', 'Events','Exporting Graphics','Plotting', ...
+    'Validation Data','Simulations','Calculations');
+
+
+
+%%% Top-level Routines
+To run a simulation, simply open the top-level routines and click "Run".
+There are ... top-level routines in this work:
+1. TopRoutine_Main: Run general simulations
+
+Set 'on' for cases/examples that you want to run.
+
+
+
+%%% Folders
+TBA
+
+
+
+%%% Defining Input Parameters
+There are a lot of parameters in our models, with many different functions relying on them. 
+Hence, it is important to systematically define input parameters to ensure that everything is consistent.
+ 
+Here are some key steps.
+1. In the file "get_input_data", define all independent inputs here. 
+"Independent" in this case = the input is not calculated from or relies on any other input.
+2. In the file "input_processing", define all dependent inputs here. 
+"Dependent" in this case = the input must be calculated from some other input parameters. 
+Hence, all formulas/correlations are defined here.
+
+A simple way to define and extract the inputs is
+ip0 = get_input_data;  % define all independent inputs (contained in the struct ip0)
+ip = input_processing(ip0);  % pass ip0 to the function that calculates in dependent inputs
+                               and then collect all inputs in the struct ip
+
+To change the value of each input parameter, you can either correct it directly in "get_input_data" 
+or overwrite it before passing to "input_processing". For example,
+ip0 = get_input_data;  
+ip0.Vl = 2e-6;  % overwrite the parameter Vl
+ip = input_processing(ip0); 
+
+With the above syntax, "ip" is the final struct that contains all input parameters. Always pass "ip" to any 
+function that requires input data to ensure that every function and calculation are based on the same set 
+of inputs. When there are changes in any independent inputs, always run "input_processing" to ensure that 
+all dependent inputs are updated using the above syntax.
+
+Although both approaches can be used with no difference, we suggest the latter (overwrite) to preserve 
+the default parameter values in "get_input_data". It is also easier, e.g., when running through a for loop with
+different parameter values in each loop.
+%====================================================================================================================
