@@ -67,11 +67,7 @@ function Membrane() {
   // 6) Run time placeholder
   const [runTime, setRunTime] = useState(30);
 
-  // 7) Navigation
-  const openIVT = () => window.open('/', '_blank');
-  const openCCTC = () => window.open('/cctc', '_blank');
-  const openLyo = () => window.open('/lyo', '_blank');
-  const openLNP = () => alert('LNP Unit - Coming Soon');
+
 
   // 8) Input handling
   const handleInputChange = (e, key) => {
@@ -141,6 +137,45 @@ function Membrane() {
   const handleDiafiltrationSelection = (sel) => {
     setDiafSelection(sel);
   };
+
+
+    // Function to open IVT in a new window
+    const openIVT = () => {
+      const ivtWindow = window.open('/', 'IVT Window', 'width=800,height=600');
+
+      // Optional: Handle if the window fails to open
+      if (!ivtWindow) {
+          alert('Popup blocked! Please allow popups for this website.');
+      }
+  };
+
+  // Function to open Lyo in a new window
+  const openLyo = () => {
+      const lyoWindow = window.open('/lyo', 'Lyo Window', 'width=800,height=600');
+
+      // Optional: Handle if the window fails to open
+      if (!lyoWindow) {
+          alert('Popup blocked! Please allow popups for this website.');
+      }
+  };
+
+  const openCCTC = () => {
+   
+      const membraneWindow = window.open('/cctc', 'CCTC Window', 'width=800,height=600');
+      if (!membraneWindow) {
+        alert('Popup blocked! Please allow popups for this website.');
+      }
+    };
+
+  const openLNP = () => {
+   
+      const LnpWindow = window.open('/lnp', 'LNP Window', 'width=800,height=600');
+      if (!LnpWindow) {
+        alert('Popup blocked! Please allow popups for this website.');
+      }
+    };
+
+
 
   return (
     <div className="membrane-container">
