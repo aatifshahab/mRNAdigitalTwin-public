@@ -44,6 +44,7 @@ function MembraneGraphs({
   td,
   TFF_protein,
   TFF_ntps,
+  TFF_mRNA,
 }) {
   //======================================================
   // Graph #1 => Input
@@ -99,8 +100,10 @@ function MembraneGraphs({
   let tffData = [];
   if (tffVar === 'Protein') {
     tffData = TFF_protein[stage - 1] || [];
-  } else {
+  } else if (tffVar === 'NTPs') {
     tffData = TFF_ntps[stage - 1] || [];
+  } else if (tffVar === 'mRNA') { // ***Added Section: handle 'mRNA'***
+    tffData = TFF_mRNA[stage - 1] || [];
   }
   const tffLabel = `${tffVar} (Stage ${stage})`;
   const tffX = td || [];

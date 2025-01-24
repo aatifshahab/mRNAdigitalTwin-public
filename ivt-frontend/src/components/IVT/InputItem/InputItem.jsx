@@ -1,4 +1,4 @@
-// src/components/InputItem.jsx
+// src/components/IVT/InputItem.jsx
 
 import React from 'react';
 import './InputItem.css';

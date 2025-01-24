@@ -1,33 +1,42 @@
 // src/components/Lyo/Lyo.jsx
 
-import React, { useState } from 'react';
-import axios from 'axios'; // Import axios for HTTP requests
+import React, { useState, useEffect, useContext } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { useLocation } from 'react-router-dom';
+import styles from './Lyo.module.css';
+
+import { SimulationContext } from '../../context/SimulationContext';
+
 import LyoInputs from './Inputs/LyoInputs';
 import LyoMeasured from './Measured/LyoMeasured';
 import LyoOutputs from './Outputs/LyoOutputs';
 import LyoGraphs from './Graphs/LyoGraphs';
-import styles from './Lyo.module.css'; // Import CSS Module
 
 function Lyo() {
-  // State for inputs
+  const location = useLocation();
+  const { getUnitResult, addChainResult } = useContext(SimulationContext);
+
+  // -----------------------------------
+  // 1. State Management
+  // -----------------------------------
   const [lyoInputs, setLyoInputs] = useState({
-    InitfreezingTemperature: '298.15', 
-    InitprimaryDryingTemperature: '228',
-    InitsecondaryDryingTemperature: '273',
-    TempColdGasfreezing: '268', 
-    TempShelfprimaryDrying: '270', 
-    TempShelfsecondaryDrying: '295', 
-    Pressure: '10',
-    massFractionmRNA: '0.05',
-    fluidVolume: '3e-6', 
+    InitfreezingTemperature: 298.15,
+    InitprimaryDryingTemperature: 228,
+    InitsecondaryDryingTemperature: 273,
+    TempColdGasfreezing: 268,
+    TempShelfprimaryDrying: 270,
+    TempShelfsecondaryDrying: 295,
+    Pressure: 10,
+    massFractionmRNA: 0.05,
+    fluidVolume: 3e-6,
   });
 
-  // State for selected tags
+  // For selected "tags"/variables
   const [selectedInputTag, setSelectedInputTag] = useState('Temperature');
   const [selectedMeasuredVariable, setSelectedMeasuredVariable] = useState(null);
   const [selectedOutputVariable, setSelectedOutputVariable] = useState(null);
 
-  // State for outputs
+  // Outputs
   const [lyoOutputs, setLyoOutputs] = useState({
     time1: [],
     time2: [],
@@ -40,25 +49,77 @@ function Lyo() {
     operatingTemperature: [],
   });
 
-  // State for measured variables
+  // Measured
   const [lyoMeasured, setLyoMeasured] = useState({
     operatingTemperature: [],
     operatingPressure: [],
   });
 
-  // State for loading and error
-  const [isLoading, setIsLoading] = useState(false);
+  // Loading & error
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Handle input changes
+  // -----------------------------------
+  // 2. Check for `uniqueId` => Chain Mode
+  // -----------------------------------
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const uniqueId = params.get('uniqueId');
+
+    if (!uniqueId) {
+      // Standalone => no fetch
+      setIsLoading(false);
+      return;
+    }
+
+    // Chain mode => fetch from backend
+    (async () => {
+      try {
+        const fetched = await getUnitResult(uniqueId);
+        if (!fetched) {
+          setError(`No Lyo result found for uniqueId=${uniqueId}`);
+        } else {
+          // The shape from main.py => { time1, time2, time3, time, massOfIce, ... }
+          setLyoOutputs({
+            time1: fetched.time1 || [],
+            time2: fetched.time2 || [],
+            time3: fetched.time3 || [],
+            time: fetched.time || [],
+            massOfIce: fetched.massOfIce || [],
+            boundWater: fetched.boundWater || [],
+            productTemperature: fetched.productTemperature || [],
+            operatingPressure: fetched.operatingPressure || [],
+            operatingTemperature: fetched.operatingTemperature || [],
+          });
+          setLyoMeasured({
+            operatingTemperature: fetched.operatingTemperature || [],
+            operatingPressure: fetched.operatingPressure || [],
+          });
+        }
+      } catch (err) {
+        console.error('Error loading Lyo chain data:', err);
+        setError('Failed to load Lyo chain data.');
+      }
+      setIsLoading(false);
+    })();
+  }, [location.search, getUnitResult]);
+
+  // -----------------------------------
+  // 3. Handle Input Changes
+  // -----------------------------------
   const handleInputChange = (e, name) => {
     const value = e.target.value;
-    setLyoInputs({ ...lyoInputs, [name]: value });
+    setLyoInputs((prev) => ({
+      ...prev,
+      [name]: isNaN(parseFloat(value)) ? value : parseFloat(value),
+    }));
   };
 
-  // Handle Run Unit
+  // -----------------------------------
+  // 4. Standalone Run => Single-Unit Chain
+  // -----------------------------------
   const handleRunLyo = async () => {
-    // Validate inputs before sending
+    // Optional: Validate inputs
     const requiredFields = [
       'fluidVolume',
       'massFractionmRNA',
@@ -70,10 +131,13 @@ function Lyo() {
       'TempShelfsecondaryDrying',
       'Pressure',
     ];
-
     for (let field of requiredFields) {
-      if (lyoInputs[field] === '' || isNaN(parseFloat(lyoInputs[field]))) {
+      if (!lyoInputs[field] && lyoInputs[field] !== 0) {
         alert(`Please enter a valid value for ${field}`);
+        return;
+      }
+      if (isNaN(parseFloat(lyoInputs[field]))) {
+        alert(`Please enter a numeric value for ${field}`);
         return;
       }
     }
@@ -82,92 +146,89 @@ function Lyo() {
     setError(null);
 
     try {
-      // Prepare the payload
-      const payload = {
-        fluidVolume: parseFloat(lyoInputs.fluidVolume),
-        massFractionmRNA: parseFloat(lyoInputs.massFractionmRNA),
-        InitfreezingTemperature: parseFloat(lyoInputs.InitfreezingTemperature),
-        InitprimaryDryingTemperature: parseFloat(lyoInputs.InitprimaryDryingTemperature),
-        InitsecondaryDryingTemperature: parseFloat(lyoInputs.InitsecondaryDryingTemperature),
-        TempColdGasfreezing: parseFloat(lyoInputs.TempColdGasfreezing),
-        TempShelfprimaryDrying: parseFloat(lyoInputs.TempShelfprimaryDrying),
-        TempShelfsecondaryDrying: parseFloat(lyoInputs.TempShelfsecondaryDrying),
-        Pressure: parseFloat(lyoInputs.Pressure),
-      };
+      // Build single-unit chain
+      const localUniqueId = `lyo_${uuidv4()}`;
+      const chain = [
+        {
+          id: 'lyo',
+          uniqueId: localUniqueId,
+          inputs: { ...lyoInputs },
+        },
+      ];
 
-      // Make the POST request to the backend
-      const response = await axios.post('http://localhost:8000/run_lyo', payload);
+      // Call run_chain
+      const response = await fetch('http://127.0.0.1:8000/run_chain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chain }),
+      });
 
-      if (response.data.error) {
-        setError(response.data.error);
-        setIsLoading(false);
-        return;
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Error calling /run_chain');
       }
 
-      // Update outputs with the response data
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Extract single result
+      const singleResult = data.chainResults.find(
+        (item) => item.uniqueId === localUniqueId
+      );
+      if (!singleResult) {
+        throw new Error('No Lyo result found in chainResults.');
+      }
+
+      const sim = singleResult.result;
       setLyoOutputs({
-        time1: response.data.time1 || [],
-        time2: response.data.time2 || [],
-        time3: response.data.time3 || [],
-        time: response.data.time || [],
-        massOfIce: response.data.massOfIce || [],
-        boundWater: response.data.boundWater || [],
-        productTemperature: response.data.productTemperature || [],
-        operatingPressure: response.data.operatingPressure || [],
-        operatingTemperature: response.data.operatingTemperature || [],
+        time1: sim.time1 || [],
+        time2: sim.time2 || [],
+        time3: sim.time3 || [],
+        time: sim.time || [],
+        massOfIce: sim.massOfIce || [],
+        boundWater: sim.boundWater || [],
+        productTemperature: sim.productTemperature || [],
+        operatingPressure: sim.operatingPressure || [],
+        operatingTemperature: sim.operatingTemperature || [],
       });
 
-      // Update measured data with the last values
       setLyoMeasured({
-        operatingTemperature: response.data.operatingTemperature || [],
-        operatingPressure: response.data.operatingPressure || [],
+        operatingTemperature: sim.operatingTemperature || [],
+        operatingPressure: sim.operatingPressure || [],
       });
 
-      // Optionally, display success message
+      addChainResult(localUniqueId, sim);
+
       alert('Lyophilization simulation completed successfully!');
     } catch (err) {
       console.error('Error running Lyo simulation:', err);
-      setError('Failed to run simulation. Please try again.');
+      setError(err.message || 'Failed to run simulation. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Function to open IVT in a new window
+  // -----------------------------------
+  // 5. Navigation Functions
+  // -----------------------------------
   const openIVT = () => {
-    const ivtWindow = window.open('/', 'IVT Window', 'width=800,height=600');
-
-    // Optional: Handle if the window fails to open
-    if (!ivtWindow) {
-      alert('Popup blocked! Please allow popups for this website.');
-    }
+    window.open('/ivt', '_blank', 'width=800,height=600');
   };
-
-  // Function to open CCTC in a new window
-  const openCCTC = () => {
-    const cctcWindow = window.open('/cctc', 'CCTC Window', 'width=800,height=600');
-
-    // Optional: Handle if the window fails to open
-    if (!cctcWindow) {
-      alert('Popup blocked! Please allow popups for this website.');
-    }
-  };
-
   const openMembrane = () => {
-    // Open Membrane in a new tab (or same tab)
-    const membraneWindow = window.open('/membrane', '_blank', 'width=800,height=600');
-    if (!membraneWindow) {
-      alert('Popup blocked! Please allow popups for this website.');
-    }
+    window.open('/membrane', '_blank', 'width=800,height=600');
+  };
+  const openCCTC = () => {
+    window.open('/cctc', '_blank', 'width=800,height=600');
+  };
+  const openLNP = () => {
+    window.open('/lnp', '_blank', 'width=800,height=600');
   };
 
-const openLNP = () => {
-    // Open Membrane in a new tab (or same tab)
-    const LnpWindow = window.open('/lnp', '_blank', 'width=800,height=600');
-    if (!LnpWindow) {
-      alert('Popup blocked! Please allow popups for this website.');
-    }
-  };
+  // Check if chain mode
+  const params = new URLSearchParams(location.search);
+  const isChainMode = !!params.get('uniqueId');
 
   return (
     <div className={styles.container}>
@@ -175,64 +236,85 @@ const openLNP = () => {
 
       {/* Navigation Buttons */}
       <div className={styles.navigationButtons}>
-        <button onClick={openIVT} className={styles.navButton}>Go to IVT Unit</button>
-        <button onClick={openMembrane} className={styles.navButton}>Go to Membrane Unit</button>
-        <button onClick={openCCTC} className={styles.navButton}>Go to CCTC Unit</button>
-        <button onClick={openLNP} className={styles.navButton}>Go to LNP Unit</button>
-      </div>
-
-      {/* Independent Containers */}
-      <div className={styles.inputsContainer}>
-        <LyoInputs
-          lyoInputs={lyoInputs}
-          handleInputChange={handleInputChange}
-          selectedInputTag={selectedInputTag}
-          setSelectedInputTag={setSelectedInputTag}
-        />
-      </div>
-
-      <div className={styles.measuredContainer}>
-        <LyoMeasured
-          lyoMeasured={lyoMeasured}
-          selectedMeasuredVariable={selectedMeasuredVariable}
-          setSelectedMeasuredVariable={setSelectedMeasuredVariable}
-        />
-      </div>
-
-      <div className={styles.outputContainer}>
-        <LyoOutputs
-          lyoOutputs={lyoOutputs}
-          selectedOutputVariable={selectedOutputVariable}
-          setSelectedOutputVariable={setSelectedOutputVariable}
-        />
-      </div>
-
-      <div className={styles.figureContainer}>
-        <div className={styles.figureWrapper}>
-          <h3>Figure Placeholder</h3>
-          {/* Add your figure content here */}
-        </div>
-      </div>
-
-      {/* Graph Container with Three Graphs */}
-      <div className={styles.graphContainer}>
-        <LyoGraphs
-          selectedMeasuredVariable={selectedMeasuredVariable}
-          selectedOutputVariable={selectedOutputVariable}
-          lyoOutputs={lyoOutputs}
-          lyoMeasured={lyoMeasured}
-        />
-      </div>
-
-      {/* Run Unit Button */}
-      <div className={styles.runUnitButton}>
-        <button onClick={handleRunLyo} className={styles.runButton} disabled={isLoading}>
-          {isLoading ? 'Running...' : 'Run Lyophilization Unit'}
+        <button onClick={openIVT} className={styles.navButton}>
+          Go to IVT Unit
+        </button>
+        <button onClick={openMembrane} className={styles.navButton}>
+          Go to Membrane Unit
+        </button>
+        <button onClick={openCCTC} className={styles.navButton}>
+          Go to CCTC Unit
+        </button>
+        <button onClick={openLNP} className={styles.navButton}>
+          Go to LNP Unit
         </button>
       </div>
 
-      {/* Error Message */}
+      {isLoading && <div>Loading...</div>}
       {error && <div className={styles.errorMessage}>{error}</div>}
+
+      {!isLoading && !error && (
+        <>
+          {/* Inputs */}
+          <div className={styles.inputsContainer}>
+            <LyoInputs
+              lyoInputs={lyoInputs}
+              handleInputChange={handleInputChange}
+              selectedInputTag={selectedInputTag}
+              setSelectedInputTag={setSelectedInputTag}
+            />
+          </div>
+
+          {/* Measured */}
+          <div className={styles.measuredContainer}>
+            <LyoMeasured
+              lyoMeasured={lyoMeasured}
+              selectedMeasuredVariable={selectedMeasuredVariable}
+              setSelectedMeasuredVariable={setSelectedMeasuredVariable}
+            />
+          </div>
+
+          {/* Outputs */}
+          <div className={styles.outputContainer}>
+            <LyoOutputs
+              lyoOutputs={lyoOutputs}
+              selectedOutputVariable={selectedOutputVariable}
+              setSelectedOutputVariable={setSelectedOutputVariable}
+            />
+          </div>
+
+          {/* Figure Placeholder */}
+          <div className={styles.figureContainer}>
+            <div className={styles.figureWrapper}>
+              <h3>Figure Placeholder</h3>
+              {/* Add your figure content here */}
+            </div>
+          </div>
+
+          {/* Graphs */}
+          <div className={styles.graphContainer}>
+            <LyoGraphs
+              selectedMeasuredVariable={selectedMeasuredVariable}
+              selectedOutputVariable={selectedOutputVariable}
+              lyoOutputs={lyoOutputs}
+              lyoMeasured={lyoMeasured}
+            />
+          </div>
+
+          {/* Run Unit Button (Standalone) */}
+          {!isChainMode && (
+            <div className={styles.runUnitButton}>
+              <button
+                onClick={handleRunLyo}
+                className={styles.runButton}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Running...' : 'Run Lyophilization Unit'}
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

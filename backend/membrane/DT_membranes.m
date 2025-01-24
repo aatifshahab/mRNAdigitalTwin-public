@@ -9,6 +9,9 @@ X = 0.90; %setpoint user input: Conversion=qp/qF (Flowrate of permeate / Flowrat
 D=4.5; %mL/min  ; Flowrate of buffer for washing step
 n_stages=3; % larger than 1, maximum is 5
 
+
+
+
 %% Call DT_conc function
 [Cout1, C1, Cmatrix1, Cout2, C2, Cmatrix2, Cout3, C3, Cmatrix3, time_points, x, td, C1TFF, C2TFF, C3TFF,Jcrit,Xactual] = DT_conc(qF, c0, X,n_stages,D, 'VIBRO');
 % The output of this function contain all the information you need to plot

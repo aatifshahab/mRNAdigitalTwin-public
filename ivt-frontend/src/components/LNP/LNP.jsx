@@ -1,7 +1,11 @@
 // src/components/LNP/LNP.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { useLocation } from 'react-router-dom';
 import styles from './LNP.module.css';
+
+import { SimulationContext } from '../../context/SimulationContext';
 
 import LNPInputs from './Inputs/LNPInputs';
 import LNPOutputs from './Outputs/LNPOutputs';
@@ -9,179 +13,203 @@ import LNPGraphs from './Graphs/LNPGraphs';
 import LNPFigure from './Figure/LNPFigure';
 import LNPRun from './Run/LNPRun';
 
-import LNPVariableTag from './Tags/LNPVariableTag'; // Ensure the path is correct
-
-// Module-level window references
-let ivtWindow = null;
-let cctcWindow = null;
-let membraneWindow = null;
-let lyoWindow = null;
-
 function LNP() {
-  // State for Inputs
+  const location = useLocation();
+  const { getUnitResult, addChainResult } = useContext(SimulationContext);
+
+  // -----------------------------------
+  // 1. State: Inputs and Outputs
+  // -----------------------------------
   const [inputs, setInputs] = useState({
-    Residential_time: 60, // seconds
-    FRR: 3,               // flow rate ratio
-    pH: 5.5,              // pH value
-    Ion: 0.1,             // ionic concentration
-    TF: 0,                // total flowrate ml/min
+    Residential_time: 60, 
+    FRR: 3,
+    pH: 5.5,
+    Ion: 0.1,
+    TF: 0,
   });
 
-  // State for Outputs
   const [outputs, setOutputs] = useState({
     Diameter: [],
     PSD: [],
     error: null,
   });
 
-  // State for Run Button
+  // Manage loading/error states
   const [isRunning, setIsRunning] = useState(false);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Handle Input Changes
+  // -----------------------------------
+  // 2. Check if there's a uniqueId in the URL => Chain Mode
+  // -----------------------------------
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const uniqueId = params.get('uniqueId');
+
+    if (!uniqueId) {
+      // Standalone mode => skip fetch
+      setLoading(false);
+      return;
+    }
+
+    // If chain mode, fetch from the backend (via context)
+    (async () => {
+      try {
+        const result = await getUnitResult(uniqueId);
+        if (!result) {
+          setError(`No LNP result found for uniqueId=${uniqueId}`);
+        } else {
+          setOutputs({
+            Diameter: result.Diameter || [],
+            PSD: result.PSD || [],
+            error: result.error || null,
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching LNP chain data:', err);
+        setError('Failed to load LNP chain data.');
+      }
+      setLoading(false);
+    })();
+  }, [location.search, getUnitResult]);
+
+  // -----------------------------------
+  // 3. Handle Input Changes
+  // -----------------------------------
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setInputs((prev) => ({
       ...prev,
       [name]: parseFloat(value),
     }));
+    // Optionally reset outputs if you want
   };
 
-  // Handle Run Simulation
+  // -----------------------------------
+  // 4. Single-Unit Chain Run
+  // -----------------------------------
   const handleRun = async () => {
     setIsRunning(true);
+    setError(null);
+
     try {
-      const response = await fetch('http://127.0.0.1:8000/run_lnp', {
+      const localUniqueId = `lnp_${uuidv4()}`;
+      // Build the chain array with just one LNP unit
+      const chain = [
+        {
+          id: 'lnp',
+          uniqueId: localUniqueId,
+          inputs: { ...inputs },
+        },
+      ];
+
+      const response = await fetch('http://127.0.0.1:8000/run_chain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(inputs),
+        body: JSON.stringify({ chain }),
       });
 
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Error calling /run_chain');
+      }
       const data = await response.json();
-
       if (data.error) {
-        setOutputs({
-          Diameter: [],
-          PSD: [],
-          error: data.error,
-        });
-        alert(`Error: ${data.error}`);
-      } else {
-        setOutputs({
-          Diameter: data.Diameter,
-          PSD: data.PSD,
-          error: null,
-        });
-        alert('LNP Simulation Completed Successfully!');
+        throw new Error(data.error);
       }
-    } catch (error) {
+
+      // Find our single result
+      const singleResult = data.chainResults.find(
+        (item) => item.uniqueId === localUniqueId
+      );
+      if (!singleResult) {
+        throw new Error('No LNP result found in chainResults.');
+      }
+
+      const sim = singleResult.result;
+      // sim => { Diameter: [...], PSD: [...], error: null }
       setOutputs({
-        Diameter: [],
-        PSD: [],
-        error: 'Failed to connect to the backend.',
+        Diameter: sim.Diameter || [],
+        PSD: sim.PSD || [],
+        error: sim.error || null,
       });
-      alert('Failed to connect to the backend.');
+
+      // Optionally store in context
+      addChainResult(localUniqueId, sim);
+
+      alert('LNP Simulation Completed Successfully!');
+    } catch (err) {
+      console.error('Error in handleRun:', err);
+      setOutputs({ Diameter: [], PSD: [], error: err.message });
+      setError(err.message);
+    } finally {
+      setIsRunning(false);
     }
-    setIsRunning(false);
   };
 
-  // Navigation Functions with Enhanced Window Management
+  // -----------------------------------
+  // 5. Navigation to Other Units
+  // -----------------------------------
   const openIVT = () => {
-    const url = `${window.location.origin}/ivt`;
-    const windowName = 'IVTUnit';
-    const windowFeatures = 'width=800,height=600';
-
-    if (ivtWindow == null || ivtWindow.closed) {
-      ivtWindow = window.open(url, windowName, windowFeatures);
-      if (ivtWindow) {
-        ivtWindow.focus();
-      } else {
-        alert('Popup blocked! Please allow popups for this website.');
-      }
-    } else {
-      ivtWindow.focus();
-    }
+    window.open(`/ivt`, '_blank', 'width=800,height=600');
   };
-
   const openCCTC = () => {
-    const url = `${window.location.origin}/cctc`;
-    const windowName = 'CCTCUnit';
-    const windowFeatures = 'width=800,height=600';
-
-    if (cctcWindow == null || cctcWindow.closed) {
-      cctcWindow = window.open(url, windowName, windowFeatures);
-      if (cctcWindow) {
-        cctcWindow.focus();
-      } else {
-        alert('Popup blocked! Please allow popups for this website.');
-      }
-    } else {
-      cctcWindow.focus();
-    }
+    window.open(`/cctc`, '_blank', 'width=800,height=600');
   };
-
   const openMembrane = () => {
-    const url = `${window.location.origin}/membrane`;
-    const windowName = 'MembraneUnit';
-    const windowFeatures = 'width=800,height=600';
-
-    if (membraneWindow == null || membraneWindow.closed) {
-      membraneWindow = window.open(url, windowName, windowFeatures);
-      if (membraneWindow) {
-        membraneWindow.focus();
-      } else {
-        alert('Popup blocked! Please allow popups for this website.');
-      }
-    } else {
-      membraneWindow.focus();
-    }
+    window.open(`/membrane`, '_blank', 'width=800,height=600');
   };
-
   const openLyo = () => {
-    const url = `${window.location.origin}/lyo`;
-    const windowName = 'FreezeDryingUnit';
-    const windowFeatures = 'width=800,height=600';
-
-    if (lyoWindow == null || lyoWindow.closed) {
-      lyoWindow = window.open(url, windowName, windowFeatures);
-      if (lyoWindow) {
-        lyoWindow.focus();
-      } else {
-        alert('Popup blocked! Please allow popups for this website.');
-      }
-    } else {
-      lyoWindow.focus();
-    }
+    window.open(`/lyo`, '_blank', 'width=800,height=600');
   };
+
+  // Check chain vs. standalone
+  const params = new URLSearchParams(location.search);
+  const isChainMode = !!params.get('uniqueId');
 
   return (
     <div className={styles.lnpContainer}>
-      <h1>LNP Unit</h1>
+      <h1 className={styles.title}>LNP Unit</h1>
 
       {/* Navigation Buttons */}
       <div className={styles.navigationButtons}>
-        <button onClick={openIVT}>Go to IVT Unit</button>
-        <button onClick={openCCTC}>Go to CCTC Unit</button>
-        <button onClick={openMembrane}>Go to Membrane Unit</button>
-        <button onClick={openLyo}>Go to Freeze-drying Unit</button>
+        <button onClick={openIVT} className={styles.navButton}>
+          Go to IVT Unit
+        </button>
+        <button onClick={openCCTC} className={styles.navButton}>
+          Go to CCTC Unit
+        </button>
+        <button onClick={openMembrane} className={styles.navButton}>
+          Go to Membrane Unit
+        </button>
+        <button onClick={openLyo} className={styles.navButton}>
+          Go to Freeze-drying Unit
+        </button>
       </div>
 
-      {/* Layout with Inputs and Outputs */}
-      <div className={styles.lnpLayout}>
-        {/* Inputs */}
-        <LNPInputs inputs={inputs} handleInputChange={handleInputChange} />
+      {loading && <div>Loading...</div>}
+      {error && <div className={styles.errorMessage}>{error}</div>}
 
-        {/* Outputs */}
-        <LNPOutputs outputs={outputs} />
-      </div>
+      {!loading && !error && (
+        <>
+          {/* Layout with Inputs and Outputs */}
+          <div className={styles.lnpLayout}>
+            <LNPInputs inputs={inputs} handleInputChange={handleInputChange} />
+            <LNPOutputs outputs={outputs} />
+          </div>
 
-      {/* Graphs */}
-      <LNPGraphs outputs={outputs} />
+          {/* Graphs */}
+          <LNPGraphs outputs={outputs} />
 
-      {/* Figure Placeholder */}
-      <LNPFigure />
+          {/* Figure */}
+          <LNPFigure />
 
-      {/* Run Button */}
-      <LNPRun handleRun={handleRun} isRunning={isRunning} />
+          {/* Run Button (only in standalone mode) */}
+          {!isChainMode && (
+            <LNPRun handleRun={handleRun} isRunning={isRunning} />
+          )}
+        </>
+      )}
     </div>
   );
 }

@@ -98,10 +98,12 @@ class MembraneOutput(BaseModel):
     td: List[float]
     TFF_protein: List[List[float]]  # each element of TFF_protein is a stage array
     TFF_ntps: List[List[float]]     # each element of TFF_ntps is a stage array
+    TFF_mRNA: List[List[float]]  # each element is the mRNA array per TFF stage
 
     # Flux and conversion
     Jcrit: float
     Xactual: float
+    
 
     error: Optional[str] = None
 
@@ -135,3 +137,25 @@ class LNPOutput(BaseModel):
     Diameter: List[List[float]] 
     PSD: List[List[float]]      
     error: Optional[str] = None  
+
+
+# Serial aka chain simulation
+class ChainUnit(BaseModel):
+    id: str
+    inputs: dict
+    uniqueId: str
+
+class ChainRequest(BaseModel):
+    chain: list[ChainUnit]
+
+class ChainResult(BaseModel):
+    unitId: str
+    uniqueId: str
+    result: dict
+
+class ChainResponse(BaseModel):
+    chainResults: list[ChainResult]
+
+
+class UnitResult(BaseModel):
+    result: dict

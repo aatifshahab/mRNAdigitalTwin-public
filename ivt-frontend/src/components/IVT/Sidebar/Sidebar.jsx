@@ -1,4 +1,4 @@
-// src/components/Sidebar/Sidebar.jsx
+// src/components/IVT/Sidebar/Sidebar.jsx
 
 import React from 'react';
 import InputItem from '../InputItem/InputItem';

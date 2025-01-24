@@ -1,0 +1,168 @@
+/* src/components/MainConfig/MainConfig.module.css */
+
+.mainConfigContainer {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.availableUnitsSection,
+.currentFlowSection {
+  margin-bottom: 30px;
+}
+
+.availableUnitsRow,
+.currentFlowRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.availableUnitButton,
+.flowItemButton,
+.editButton,
+.removeButton {
+  padding: 10px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+}
+
+.availableUnitButton {
+  background-color: #4caf50;
+  color: white;
+}
+
+.flowItemButton {
+  background-color: #2196f3;
+  color: white;
+}
+
+.editButton {
+  background-color: #ff9800;
+  color: white;
+}
+
+.removeButton {
+  background-color: #f44336;
+  color: white;
+}
+
+.flowItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.runPlantSection {
+  text-align: center;
+}
+
+.runPlantButton {
+  padding: 12px 25px;
+  font-size: 16px;
+  background-color: #673ab7;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: white;
+  padding: 20px 30px;
+  border-radius: 8px;
+  width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modalContent h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup label {
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.formGroup input {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.modalButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.saveButton {
+  padding: 8px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancelButton {
+  padding: 8px 16px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .modalContent {
+    width: 90%;
+  }
+
+  .availableUnitsRow,
+  .currentFlowRow {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .flowItem {
+    flex-direction: column;
+  }
+}

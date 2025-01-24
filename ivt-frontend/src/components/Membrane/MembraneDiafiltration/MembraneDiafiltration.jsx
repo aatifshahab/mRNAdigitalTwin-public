@@ -16,6 +16,7 @@ import MembraneVariableTag from '../MembraneVariableTag/MembraneVariableTag';
 function MembraneDiafiltration({
   TFF_protein,
   TFF_ntps,
+  TFF_mRNA,
   td,
   onDiafiltrationSelection,
 }) {
@@ -37,9 +38,11 @@ function MembraneDiafiltration({
   // For the current stage, compute final values for both Protein and NTPs
   const currentProteinArray = TFF_protein[selectedStage - 1] || [];
   const currentNTPsArray = TFF_ntps[selectedStage - 1] || [];
+  const currentMRNAArray    = TFF_mRNA[selectedStage - 1] || [];
 
   const lastValueProtein = getLastValueTFF(currentProteinArray);
   const lastValueNTPs = getLastValueTFF(currentNTPsArray);
+  const lastValueMRNA    = getLastValueTFF(currentMRNAArray);
 
   // Notifies parent whenever user changes variable or stage
   const notifyParent = (variable, stage) => {
@@ -63,18 +66,15 @@ function MembraneDiafiltration({
     <div className={styles.diaPanel}>
       <h2 className={styles.header}>Diafiltration Step</h2>
 
-      {/* Row with Protein and NTPs tags + final values */}
       <div className={styles.tagRow}>
         {/* Protein Box */}
         <div className={styles.tagBox}>
           <MembraneVariableTag
             name="Protein"
             value=""
-            // isSelected => highlight if "Protein" is the chosen variable
             isSelected={selectedVar === 'Protein'}
             onTagClick={() => handleVarClick('Protein')}
           />
-          {/* Show final numeric for Protein no matter selection */}
           <div className={styles.valueLabel}>
             {lastValueProtein} mg/mL
           </div>
@@ -88,14 +88,25 @@ function MembraneDiafiltration({
             isSelected={selectedVar === 'NTPs'}
             onTagClick={() => handleVarClick('NTPs')}
           />
-          {/* Show final numeric for NTPs no matter selection */}
           <div className={styles.valueLabel}>
             {lastValueNTPs} mg/mL
           </div>
         </div>
+
+        {/* ***Added Section: mRNA Box*** */}
+        <div className={styles.tagBox}>
+          <MembraneVariableTag
+            name="mRNA"
+            value=""
+            isSelected={selectedVar === 'mRNA'}
+            onTagClick={() => handleVarClick('mRNA')}
+          />
+          <div className={styles.valueLabel}>
+            {lastValueMRNA} mg/mL
+          </div>
+        </div>
       </div>
 
-      {/* Stage selection dropdown */}
       <div className={styles.stageRow}>
         <label className={styles.label}>Stage:</label>
         <select

@@ -1,31 +1,34 @@
-// src/App.js
+// src/App.jsx
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import MainConfig from './components/MainConfig/MainConfig';
 import IVT from './components/IVT/IVT';
-import CCTC from './components/CCTC/CCTC';
-import Lyo from './components/Lyo/Lyo';
 import Membrane from './components/Membrane/Membrane';
+import CCTC from './components/CCTC/CCTC';
 import LNP from './components/LNP/LNP';
+import Lyo from './components/Lyo/Lyo';
+import { SimulationProvider } from './context/SimulationContext';
 import './App.css';
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        {/* Define Routes */}
-        <Routes>
-          <Route path="/" element={<IVT />} />
-          <Route path="/cctc" element={<CCTC />} />
-          <Route path="/lnp" element={<LNP />} /> 
-          <Route path="/lyo" element={<Lyo />} /> 
-          <Route path="/membrane" element={<Membrane />} />
-        </Routes>
-      </div>
-    </Router>
+    <SimulationProvider>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/" element={<MainConfig />} />
+            <Route path="/ivt" element={<IVT />} />
+            <Route path="/membrane" element={<Membrane />} />
+            <Route path="/cctc" element={<CCTC />} />
+            <Route path="/lnp" element={<LNP />} />
+            <Route path="/lyo" element={<Lyo />} />
+            <Route path="*" element={<div>404 Not Found</div>} />
+          </Routes>
+        </div>
+      </Router>
+    </SimulationProvider>
   );
 }
-
-
 
 export default App;

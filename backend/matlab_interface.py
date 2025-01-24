@@ -12,7 +12,7 @@ def get_matlab_engine():
         try:
             eng = matlab.engine.start_matlab()
             # Navigate to the backend directory
-            backend_dir = r'C:\Users\moha0095\ivtappNew1\backend'  # Update this path as needed
+            backend_dir = r'C:\Users\moha0095\mRNAdigitalTwin\backend'  # Update this path as needed
             eng.cd(backend_dir, nargout=0)
 
             # Add the Lyo folder to MATLAB's path
@@ -196,6 +196,7 @@ def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterT
         #  10) TFF_ntps
         #  11) Jcrit
         #  12) Xactual
+        #  13) TFF_mRNA
         outputs = eng_instance.membraneAPI(
             qF_matlab,
             c0_matlab,
@@ -203,7 +204,7 @@ def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterT
             n_stages_matlab,
             D_matlab,
             filterType_matlab,
-            nargout=12
+            nargout=13
         )
 
         # Extract each
@@ -219,6 +220,7 @@ def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterT
         TFF_ntps_mat            = outputs[9]
         Jcrit_val               = float(outputs[10])
         Xactual_val             = float(outputs[11])
+        TFF_mRNA_mat            = outputs[12]
 
         # Convert to Python
         time_points_py         = np.array(time_points_mat).flatten().tolist()
@@ -246,6 +248,11 @@ def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterT
             arr = np.array(cell_array).flatten().tolist()
             TFF_ntps_py.append(arr)
 
+        TFF_mRNA_py = []
+        for cell_array in TFF_mRNA_mat:
+            arr = np.array(cell_array).flatten().tolist()
+            TFF_mRNA_py.append(arr)
+
         result = {
             "time_points": time_points_py,
             "x_positions": x_positions_py,
@@ -258,7 +265,8 @@ def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterT
             "TFF_protein": TFF_protein_py,
             "TFF_ntps": TFF_ntps_py,
             "Jcrit": Jcrit_val,
-            "Xactual": Xactual_val
+            "Xactual": Xactual_val,
+            "TFF_mRNA": TFF_mRNA_py
         }
 
         return result
@@ -303,3 +311,122 @@ def run_lnp_model(Residential_time, FRR, pH, Ion, TF):
     except Exception as e:
         logging.error(f"Error in running MATLAB LNP function: {e}")
         raise RuntimeError(f"Error in running MATLAB LNP function: {e}")
+
+
+
+# def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterType, V_IVT):
+#     """
+#     Runs the membraneAPI_new MATLAB function and retrieves the outputs.
+
+#     Parameters:
+#         qF (float): Feed flow rate [mL/min], e.g., 1-5
+#         c0_mRNA (float): Initial mRNA concentration [mg/mL]
+#         c0_protein (float): Initial protein concentration [mg/mL]
+#         c0_ntps (float): Initial NTPs concentration [mg/mL]
+#         X (float): Desired conversion (0 < X < 1)
+#         n_stages (int): Number of TFF stages (>=2)
+#         D (float): Diafiltration buffer flow rate [mL/min]
+#         filterType (str): 'NOVIBRO' or 'VIBRO'
+#         V_IVT (float): Total processing volume [mL], e.g., 3000 for 3L
+
+#     Returns:
+#         dict: A dictionary containing all outputs from membraneAPI_new
+#     """
+#     try:
+#         eng_instance = get_matlab_engine()
+
+#         # Convert Python values to MATLAB data types
+#         qF_matlab = float(qF)
+#         c0_matlab = matlab.double([float(c0_mRNA), float(c0_protein), float(c0_ntps)])
+#         c0_matlab = eng_instance.transpose(c0_matlab)  # Convert to 3×1 column vector
+#         X_matlab = float(X)
+#         n_stages_matlab = float(n_stages)
+#         D_matlab = float(D)
+#         filterType_matlab = str(filterType)
+#         V_IVT_matlab = float(V_IVT)
+
+#         # ***Added Section: Call the updated membraneAPI_new MATLAB function with 17 outputs***
+#         outputs = eng_instance.membraneAPI_new(
+#             qF_matlab,
+#             c0_matlab,
+#             X_matlab,
+#             n_stages_matlab,
+#             D_matlab,
+#             filterType_matlab,
+#             V_IVT_matlab,
+#             nargout=17  # Updated to reflect the new number of outputs
+#         )
+      
+
+#         # Extract each output
+#         time_points_mat = outputs[0]
+#         x_positions_mat = outputs[1]
+#         Cmatrix_mRNA_mat = outputs[2]
+#         Cmatrix_protein_mat = outputs[3]
+#         Cmatrix_ntps_mat = outputs[4]
+#         td_mat = outputs[5]
+#         TFF_protein_mat = outputs[6]
+#         TFF_ntps_mat = outputs[7]
+#         t_ss_mat = outputs[8]
+#         Reduction_mat = outputs[9]
+#         V_final_mat = outputs[10]
+#         avg_conc_pre_ccdf_mat = outputs[11]
+#         avg_conc_post_ccdf_mat = outputs[12]
+#         ccdf_time_mat = outputs[13]
+#         X_actual_mat = outputs[14]
+#         interpolated_times_mat = outputs[15]  
+#         interpolated_indices_mat = outputs[16] 
+
+#         # Convert MATLAB data types to Python
+#         time_points_py = np.array(time_points_mat).flatten().tolist()
+#         x_positions_py = np.array(x_positions_mat).flatten().tolist()
+
+#         Cmatrix_mRNA_py = np.array(Cmatrix_mRNA_mat).tolist()       # 2D list
+#         Cmatrix_protein_py = np.array(Cmatrix_protein_mat).tolist() # 2D list
+#         Cmatrix_ntps_py = np.array(Cmatrix_ntps_mat).tolist()       # 2D list
+
+#         td_py = np.array(td_mat).flatten().tolist()
+
+#         # Convert cell arrays to lists of lists for TFF_protein and TFF_ntps
+#         TFF_protein_py = [np.array(stage).flatten().tolist() for stage in TFF_protein_mat]
+#         TFF_ntps_py = [np.array(stage).flatten().tolist() for stage in TFF_ntps_mat]
+
+#         t_ss_py = np.array(t_ss_mat).flatten().tolist()
+#         Reduction_py = np.array(Reduction_mat).flatten().tolist()
+#         V_final_py = float(V_final_mat)
+#         avg_conc_pre_ccdf_py = np.array(avg_conc_pre_ccdf_mat).flatten().tolist()
+#         avg_conc_post_ccdf_py = np.array(avg_conc_post_ccdf_mat).flatten().tolist()
+#         ccdf_time_py = float(ccdf_time_mat)
+#         X_actual_py = float(X_actual_mat)
+
+   
+#         interpolated_times_py = np.array(interpolated_times_mat).flatten().tolist()
+#         interpolated_indices_py = np.array(interpolated_indices_mat).flatten().astype(int).tolist()
+       
+
+#         # Prepare the result dictionary
+#         result = {
+#             "time_points": time_points_py,
+#             "x_positions": x_positions_py,
+#             "Cmatrix_mRNA": Cmatrix_mRNA_py,
+#             "Cmatrix_protein": Cmatrix_protein_py,
+#             "Cmatrix_ntps": Cmatrix_ntps_py,
+#             "td": td_py,
+#             "TFF_protein": TFF_protein_py,
+#             "TFF_ntps": TFF_ntps_py,
+#             "t_ss": t_ss_py,
+#             "Reduction": Reduction_py,
+#             "V_final": V_final_py,
+#             "avg_conc_pre_ccdf": avg_conc_pre_ccdf_py,
+#             "avg_conc_post_ccdf": avg_conc_post_ccdf_py,
+#             "ccdf_time": ccdf_time_py,
+#             "X": X_actual_py,
+#             "interpolated_times": interpolated_times_py,      
+#             "interpolated_indices": interpolated_indices_py    
+#         }
+
+#         return result
+
+#     except Exception as e:
+#         logging.error(f"Error in run_membrane_model: {e}")
+#         raise RuntimeError(f"Error in run_membrane_model: {e}")

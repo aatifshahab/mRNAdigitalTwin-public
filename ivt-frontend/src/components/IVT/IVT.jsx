@@ -1,23 +1,32 @@
 // src/components/IVT/IVT.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar/Sidebar';
 import MeasuredVariables from './MeasuredVariables/MeasuredVariables';
 import OutputVariables from './OutputVariables/OutputVariables';
 import CstrFigure from './CstrFigure/CstrFigure';
 import Graphs from './Graphs/Graphs';
 import RunPlant from './RunPlant/RunPlant';
-import axios from 'axios';
+// import axios from 'axios';  // We can just use fetch instead if we like
 import './IVT.css';
 import { labelMapping } from '../utilits/labelMapping';
 import { calculateF102 } from '../utilits/calculateF102';
+import { SimulationContext } from '../../context/SimulationContext'; 
+import { v4 as uuidv4 } from 'uuid';
+
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
 
 function IVT() {
+  const query = useQuery();
+  const uniqueId = query.get('uniqueId');
+  const { getUnitResult, addChainResult } = useContext(SimulationContext);
+
   // -----------------------------------
   // 1. State Management
   // -----------------------------------
-
-  // State for input variables
   const [inputs, setInputs] = useState({
     Q: 1.0,
     V: 2.0,
@@ -36,7 +45,7 @@ function IVT() {
   const [simulationResult, setSimulationResult] = useState(null);
   const [timeData, setTimeData] = useState([]);
 
-  // State for measured variables and their units
+  // State for measured variables
   const [measuredVariables, setMeasuredVariables] = useState({
     ATP: [0.00],
     GTP: [0.00],
@@ -58,14 +67,12 @@ function IVT() {
     mRNA: 'µM',
   });
 
-  // State for output variables and their units
+  // State for output variables
   const [outputVariables, setOutputVariables] = useState({
-    F102: [0.00], // Dummy value
-    // Add other output variables with dummy values if any
+    F102: [0.00],
   });
   const [outputUnits, setOutputUnits] = useState({
     F102: 'L/hr',
-    // Add units for other output variables if any
   });
 
   // State for selected variables
@@ -73,14 +80,13 @@ function IVT() {
   const [selectedMeasuredVariable, setSelectedMeasuredVariable] = useState(null);
   const [selectedOutputVariable, setSelectedOutputVariable] = useState(null);
 
-  // State for error handling
+  // Error / loading
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // -----------------------------------
   // 2. Helper Mappings
   // -----------------------------------
-
-  // Units mapping for measured variables
   const unitsMapping = {
     ATPo: 'mM',
     GTPo: 'mM',
@@ -90,36 +96,30 @@ function IVT() {
     TotalMgo: 'mM',
     Phosphateo: 'mM',
     TotalRNAo: 'µM',
-    // Add other units as needed
   };
 
-  // Variable name mapping from backend to frontend
   const variableNameMapping = {
     TotalMgo: 'Mg',
     TotalRNAo: 'mRNA',
-    // Add other mappings as needed
   };
 
-  // Units mapping for output variables
   const outputUnitsMapping = {
-    F102: 'L/hr', // Replace 'F102' with actual output variable names and units
-    // Add other output variables and their units as needed
+    F102: 'L/hr',
   };
 
   // -----------------------------------
   // 3. Utility Functions
   // -----------------------------------
-
-  // Function to map backend variable names to frontend-friendly names
+  // Map backend variable names to frontend-friendly names
   const mapVariableNames = (data) => {
     const mappedVariables = {};
     const mappedUnits = {};
 
     Object.keys(data).forEach((key) => {
-      if (key === 'time') return; // Skip time
+      if (key === 'time') return;
 
-      // Use labelMapping for frontend labels
-      const frontendName = labelMapping[key] || (key.endsWith('o') ? key.slice(0, -1) : key);
+      const frontendName =
+        labelMapping[key] || (key.endsWith('o') ? key.slice(0, -1) : key);
 
       mappedVariables[frontendName] = data[key];
       mappedUnits[frontendName] = unitsMapping[key] || '';
@@ -128,48 +128,87 @@ function IVT() {
     return { mappedVariables, mappedUnits };
   };
 
-  // Function to handle simulation run
+  // -----------------------------------
+  // 4. Single-Unit Simulation via /run_chain
+  // -----------------------------------
+  // (Standalone mode: user not coming from MainConfig, so there's no uniqueId param)
   const handleRunPlant = async () => {
-    // Prepare data
-    const inputData = {
-      ...inputs,
-      finaltime: finalTime,
-    };
+    // We'll generate our own uniqueId
+    const localUniqueId = `ivt_${uuidv4()}`;
+
+    // Prepare a chain array with only one item
+    const chain = [
+      {
+        id: 'ivt',
+        uniqueId: localUniqueId,
+        inputs: {
+          ...inputs,
+          finaltime: finalTime,
+        },
+      },
+    ];
 
     try {
-      const response = await axios.post(
-        'http://127.0.0.1:8000/run_simulation',
-        inputData, // Send input data to backend
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      console.log('IVT Simulation result:', response.data);
-      setSimulationResult(response.data);
-      setTimeData(response.data.time);
+      // Call the chain endpoint
+      const response = await fetch('http://127.0.0.1:8000/run_chain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chain }),
+      });
 
-      // Map and set measured variables
-      const { mappedVariables, mappedUnits } = mapVariableNames(response.data);
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Error calling /run_chain');
+      }
+
+      const data = await response.json();
+      if (data.error) {
+        alert(`Error: ${data.error}`);
+        return;
+      }
+      if (!data.chainResults) {
+        alert('No chainResults returned.');
+        return;
+      }
+
+      // Find our single result
+      const singleResult = data.chainResults.find(
+        (r) => r.uniqueId === localUniqueId
+      );
+      if (!singleResult) {
+        alert('No matching result for the IVT unit in chainResults');
+        return;
+      }
+
+      // Store this result in simulationResult
+      setSimulationResult(singleResult.result);
+
+      // Also store in global context if desired
+      addChainResult(singleResult);
+
+      // Extract time data
+      const simData = singleResult.result;
+      setTimeData(simData.time || []);
+
+      // Map measured variables
+      const { mappedVariables, mappedUnits } = mapVariableNames(simData);
       setMeasuredVariables(mappedVariables);
       setMeasuredUnits(mappedUnits);
 
-      // Generate F102 data
-      const F102Data = calculateF102(response.data.time, inputs.Q, inputs.V);
-      setOutputVariables((prevOutputVars) => ({
-        ...prevOutputVars,
+      // Generate F102
+      const F102Data = calculateF102(simData.time, inputs.Q, inputs.V);
+      setOutputVariables({
         F102: F102Data,
-      }));
+      });
       setOutputUnits(outputUnitsMapping);
 
-      // Optionally, alert the user
-      alert('IVT Simulation completed successfully!');
+      alert('IVT Simulation (single-unit) completed successfully!');
       setError(null);
-    } catch (error) {
-      console.error('Error running IVT simulation:', error);
-      alert('Error running IVT simulation. Please check the console for details.');
-      setError('Failed to run IVT simulation.');
+
+    } catch (err) {
+      console.error('Error running single-unit chain for IVT:', err);
+      alert('Error running IVT simulation (chain). Check console for details.');
+      setError(err.message);
     }
   };
 
@@ -178,18 +217,96 @@ function IVT() {
     const value = parseFloat(e.target.value);
     if (!isNaN(value)) {
       setInputs({ ...inputs, [name]: value });
+      if (simulationResult) {
+        alert('Changing inputs clears previous simulation results.');
+        clearSimulationData();
+      }
     }
   };
 
-  // Function to handle final time change
   const handleFinalTimeChange = (e) => {
     const value = parseFloat(e.target.value);
     if (!isNaN(value)) {
       setFinalTime(value);
+      if (simulationResult) {
+        alert('Changing final time clears previous simulation results.');
+        clearSimulationData();
+      }
     }
   };
 
-  // Function to handle VariableTag click
+  const clearSimulationData = () => {
+    setSimulationResult(null);
+    setMeasuredVariables({
+      ATP: [0.00],
+      GTP: [0.00],
+      CTP: [0.00],
+      UTP: [0.00],
+      Phosphate: [0.00],
+      pH: [7.00],
+      Mg: [0.00],
+      mRNA: [0.00],
+    });
+    setMeasuredUnits({
+      ATP: 'mM',
+      GTP: 'mM',
+      CTP: 'mM',
+      UTP: 'mM',
+      pH: '',
+      Mg: 'mM',
+      Phosphate: 'mM',
+      mRNA: 'µM',
+    });
+    setOutputVariables({
+      F102: [0.00],
+    });
+    setOutputUnits({
+      F102: 'L/hr',
+    });
+    setTimeData([]);
+  };
+
+  // -----------------------------------
+  // 5. Handle Chain Mode (uniqueId from URL)
+  // -----------------------------------
+  useEffect(() => {
+    const fetchChainSimulationData = async () => {
+      if (!uniqueId) {
+        setLoading(false);
+        return; // no chain mode
+      }
+      try {
+        const result = await getUnitResult(uniqueId);
+        if (result) {
+          setSimulationResult(result);
+          setTimeData(result.time || []);
+
+          const { mappedVariables, mappedUnits } = mapVariableNames(result);
+          setMeasuredVariables(mappedVariables);
+          setMeasuredUnits(mappedUnits);
+
+          const F102Data = calculateF102(result.time, inputs.Q, inputs.V);
+          setOutputVariables({
+            F102: F102Data,
+          });
+          setOutputUnits(outputUnitsMapping);
+
+          setError(null);
+        } else {
+          setError('No simulation result found for this unit.');
+        }
+      } catch (err) {
+        console.error('Error fetching simulation data:', err);
+        setError('Error fetching simulation data.');
+      }
+      setLoading(false);
+    };
+
+    fetchChainSimulationData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uniqueId]);
+
+  // Function to handle Tag click
   const handleTagClick = (variable) => {
     const { type, name } = variable;
     if (type === 'input') {
@@ -216,70 +333,61 @@ function IVT() {
 
   // Initialize default selected variables on initial load
   useEffect(() => {
-    // Set default selected variables if not already set
-    if (!selectedInputVariable && Object.keys(inputs).length > 0) {
-      setSelectedInputVariable({ type: 'input', name: Object.keys(inputs)[0] });
+    if (!uniqueId) {
+      // Standalone: set default selection
+      if (!selectedInputVariable && Object.keys(inputs).length > 0) {
+        setSelectedInputVariable({
+          type: 'input',
+          name: Object.keys(inputs)[0],
+        });
+      }
     }
     if (!selectedMeasuredVariable && Object.keys(measuredVariables).length > 0) {
-      setSelectedMeasuredVariable({ type: 'measured', name: Object.keys(measuredVariables)[0] });
+      setSelectedMeasuredVariable({
+        type: 'measured',
+        name: Object.keys(measuredVariables)[0],
+      });
     }
     if (!selectedOutputVariable && Object.keys(outputVariables).length > 0) {
-      setSelectedOutputVariable({ type: 'output', name: Object.keys(outputVariables)[0] });
+      setSelectedOutputVariable({
+        type: 'output',
+        name: Object.keys(outputVariables)[0],
+      });
     }
-  }, [inputs, measuredVariables, outputVariables, selectedInputVariable, selectedMeasuredVariable, selectedOutputVariable]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    inputs,
+    measuredVariables,
+    outputVariables,
+    selectedInputVariable,
+    selectedMeasuredVariable,
+    selectedOutputVariable,
+    uniqueId,
+  ]);
 
-  // -----------------------------------
-  // 4. Render Components
-  // -----------------------------------
-
-
-  // Function to open CCTC in a new window
-  const openCCTC = () => {
-    // Retrieve mRNA concentration from IVT measured variables
-    const mRNAConcentration = measuredVariables.mRNA[measuredVariables.mRNA.length - 1];
-
-    // Open a new window and pass mRNA concentration via query parameters
-    const cctcWindow = window.open(`/cctc?mRNA=${mRNAConcentration}`, 'CCTC Window', 'width=800,height=600');
-
-    // Optional: Handle if the window fails to open
-    if (!cctcWindow) {
-      alert('Popup blocked! Please allow popups for this website.');
-    }
-  };
-
-  // Function to open Lyo in a new window
-  const openLyo = () => {
-    // Open a new window without any query parameters
-    const lyoWindow = window.open('/lyo', 'Lyo Window', 'width=800,height=600');
-
-    // Optional: Handle if the window fails to open
-    if (!lyoWindow) {
-      alert('Popup blocked! Please allow popups for this website.');
-    }
-  };
-
+  // Navigation to other units (if you still want them in single-standalone mode)
   const openMembrane = () => {
-    // Open Membrane in a new tab (or same tab)
-    const membraneWindow = window.open('/membrane', '_blank', 'width=800,height=600');
-    if (!membraneWindow) {
-      alert('Popup blocked! Please allow popups for this website.');
-    }
+    const newUniqueId = `membrane_${uuidv4()}`;
+    window.open(`/membrane?uniqueId=${newUniqueId}`, '_blank', 'width=800,height=600');
   };
-  
-
+  const openCCTC = () => {
+    const newUniqueId = `cctc_${uuidv4()}`;
+    window.open(`/cctc?uniqueId=${newUniqueId}`, '_blank', 'width=800,height=600');
+  };
   const openLNP = () => {
-    // Open Membrane in a new tab (or same tab)
-    const LnpWindow = window.open('/lnp', '_blank', 'width=800,height=600');
-    if (!LnpWindow) {
-      alert('Popup blocked! Please allow popups for this website.');
-    }
+    const newUniqueId = `lnp_${uuidv4()}`;
+    window.open(`/lnp?uniqueId=${newUniqueId}`, '_blank', 'width=800,height=600');
+  };
+  const openLyo = () => {
+    const newUniqueId = `lyo_${uuidv4()}`;
+    window.open(`/lyo?uniqueId=${newUniqueId}`, '_blank', 'width=800,height=600');
   };
 
   return (
     <div className="ivt-container">
       <h1>IVT Unit</h1>
 
-      {/* Navigation Button to CCTC */}
+      {/* Navigation Buttons */}
       <div className="navigation-buttons">
         <button onClick={openMembrane}>Go to Membrane Unit</button>
         <button onClick={openCCTC}>Go to CCTC Unit</button>
@@ -297,9 +405,7 @@ function IVT() {
           selectedInputVariable={selectedInputVariable}
         />
 
-        {/* Main Content */}
         <div className="ivt-main-content">
-          {/* Top Section: Measured Variables and CSTR Figure & Output Variables */}
           <div className="ivt-top-section">
             {/* Measured Variables */}
             <MeasuredVariables
@@ -309,7 +415,6 @@ function IVT() {
               selectedMeasuredVariable={selectedMeasuredVariable}
             />
 
-            {/* CSTR Figure and Output Variables Side by Side */}
             <div className="ivt-figure-output">
               {/* CSTR Figure */}
               <CstrFigure />
@@ -339,17 +444,19 @@ function IVT() {
             inputUnits={inputUnits}
           />
 
-          {/* Run Plant */}
-          <RunPlant
-            finalTime={finalTime}
-            handleFinalTimeChange={handleFinalTimeChange}
-            handleRunPlant={handleRunPlant}
-          />
+          {/* RunPlant button only if not in chain mode */}
+          {!uniqueId && (
+            <RunPlant
+              finalTime={finalTime}
+              handleFinalTimeChange={handleFinalTimeChange}
+              handleRunPlant={handleRunPlant}
+            />
+          )}
         </div>
       </div>
 
-      {/* Error Display */}
       {error && <div className="error-message">{error}</div>}
+      {uniqueId && loading && <div className="loading-message">Loading simulation data...</div>}
     </div>
   );
 }
