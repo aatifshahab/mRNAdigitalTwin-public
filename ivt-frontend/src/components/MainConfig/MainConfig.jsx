@@ -24,7 +24,13 @@ function MainConfig() {
   // State for editing inputs
   const [editedInputs, setEditedInputs] = useState({});
 
-  // **New** state to show running feedback
+  // **New State**: Tracks if an error has occurred
+  const [error, setError] = useState(null);
+
+  // **New State**: Tracks if the simulation has completed
+  const [simulationCompleted, setSimulationCompleted] = useState(false);
+
+  // **Existing State**: Tracks if the simulation is running
   const [isRunningChain, setIsRunningChain] = useState(false);
 
   // Access Simulation Context
@@ -117,7 +123,7 @@ function MainConfig() {
     const url = `${window.location.origin}/${unit.id}?uniqueId=${unit.uniqueId}`;
     const windowFeatures = 'width=800,height=600';
 
-    // Always open in a new tab/window, ignoring the old approach
+    // Always open in a new tab/window
     const newWindow = window.open(url, '_blank', windowFeatures);
     if (!newWindow) {
       alert('Popup blocked! Please allow popups for this domain.');
@@ -128,6 +134,10 @@ function MainConfig() {
   const runChain = async () => {
     // Show that we are running
     setIsRunningChain(true);
+    // **Reset simulationCompleted** when a new run starts
+    setSimulationCompleted(false);
+    // **Reset error** when a new run starts
+    setError(null);
 
     // Prepare the chain array
     const chain = processFlow.map((unit) => ({
@@ -145,7 +155,8 @@ function MainConfig() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        alert(`Error: ${errorData.error}`);
+        setError(errorData.error || 'An unexpected error occurred.');
+        alert(`Error: ${errorData.error || 'An unexpected error occurred.'}`);
         setIsRunningChain(false);
         return;
       }
@@ -158,25 +169,13 @@ function MainConfig() {
         addChainResult(unitRes.uniqueId, unitRes.result);
       });
 
-      // (Optional) If you want to update the processFlow with
-      // new inputs based on the chain results, do so here:
-      /*
-      const updatedFlow = processFlow.map((unit) => {
-        const simulationResult = data.chainResults.find(
-          (res) => res.uniqueId === unit.uniqueId
-        );
-        if (simulationResult) {
-          // example: update some field in unit.inputs
-          // switch (unit.id) { ... }
-        }
-        return unit;
-      });
-      setProcessFlow(updatedFlow);
-      */
+      // **Set simulationCompleted to true** after successful run
+      setSimulationCompleted(true);
 
-      alert('Plant simulation completed successfully!');
+      
     } catch (error) {
       console.error('Error running chain:', error);
+      setError('An error occurred while running the plant simulation.');
       alert('An error occurred while running the plant simulation.');
     } finally {
       setIsRunningChain(false);
@@ -228,7 +227,7 @@ function MainConfig() {
     <div className={styles.mainConfigContainer}>
       <h1>Continuous mRNA Vaccine Manufacturing</h1>
 
-      {/* AVAILABLE UNITS (Top, horizontally) */}
+      {/* AVAILABLE UNITS */}
       <div className={styles.availableUnitsSection}>
         <h2>Available Units</h2>
         <div className={styles.availableUnitsRow}>
@@ -244,7 +243,7 @@ function MainConfig() {
         </div>
       </div>
 
-      {/* CURRENT FLOW (Below) */}
+      {/* CURRENT FLOW */}
       <div className={styles.currentFlowSection}>
         <h2>Current Flow</h2>
         {processFlow.length === 0 ? (
@@ -263,6 +262,7 @@ function MainConfig() {
                   className={styles.editButton}
                   onClick={() => editUnit(unit)}
                   title="Edit Inputs"
+                  aria-label={`Edit ${unit.name}`}
                 >
                   ✎
                 </button>
@@ -270,6 +270,7 @@ function MainConfig() {
                   className={styles.removeButton}
                   onClick={() => removeUnit(unit.uniqueId)}
                   title="Remove this unit"
+                  aria-label={`Remove ${unit.name}`}
                 >
                   &times;
                 </button>
@@ -324,14 +325,18 @@ function MainConfig() {
           >
             {isRunningChain ? 'Running...' : 'Run Plant'}
           </button>
-          {isRunningChain && (
-            <div className={styles.runningMessage}>
-              {/* Could be a spinner, or just text */}
-              Simulation in progress, please wait...
+
+          {/* **New Message**: Displayed after simulation completes */}
+          {simulationCompleted && (
+            <div className={styles.simulationCompletedMessage}>
+              Simulation completed successfully! Click on each unit in the Current Flow to inspect the results of each unit.
             </div>
           )}
         </div>
       )}
+
+      {/* Error Message */}
+      {error && <div className={styles.errorMessage}>{error}</div>}
     </div>
   );
 }
