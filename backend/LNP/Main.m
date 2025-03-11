@@ -1,11 +1,11 @@
 % %% Main
-% Residential_time = 60;%    Residential time     [s]
-% FRR = 3;%                   Flow rate ratio     [-] (1~3)
-% pH = 5.5;%                  pH                  [-] (4~6)
-% Ion = 0.1;%                 Ionic concentration [M] (0.01~1)
-% TF = 0;%                    Total flowrate      [ml/min]
+Residential_time = 60;%    Residential time     [s]
+FRR = 3;%                   Flow rate ratio     [-] (1~3)
+pH = 5.5;%                  pH                  [-] (4~6)
+Ion = 0.1;%                 Ionic concentration [M] (0.01~1)
+TF = 0;%                    Total flowrate      [ml/min]
 % 
-% [Diameter, PSD] = LNP(Residential_time, FRR, pH, Ion, TF);
+[Diameter, PSD] = LNP(Residential_time, FRR, pH, Ion, TF);
 % 
 % %% Plotting
 % figure(1)

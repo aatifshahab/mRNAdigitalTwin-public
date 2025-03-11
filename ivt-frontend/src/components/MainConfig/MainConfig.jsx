@@ -9,7 +9,7 @@ function MainConfig() {
   // Define available units
   const availableUnits = [
     { id: 'ivt', name: 'IVT Unit' },
-    { id: 'membrane', name: 'Membrane Unit' },
+    { id: 'membrane', name: 'TFF Unit' },
     { id: 'cctc', name: 'CCTC Unit' },
     { id: 'lnp', name: 'LNP Unit' },
     { id: 'lyo', name: 'Freeze-drying Unit' },
