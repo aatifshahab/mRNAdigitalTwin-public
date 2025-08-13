@@ -56,7 +56,8 @@ time1 = sol1.t; Temp1 = sol1.T; Tb1 = sol1.Tg;
 time2 = sol2.t; Temp2 = sol2.T; Tp2 = mean(Temp2,2); Tb2 = sol2.Tb;
 
 % Extract secondary drying data
-time3 = sol3.t; Temp3 = sol3.T; Tp3 = mean(Temp3,2); Tb3 = sol3.Tb; cw = mean(sol3.cw,2);
+time3 = sol3.t; Temp3 = sol3.T; Tp3 = Temp3(:,end); Tb3 = sol3.Tb; cw = mean(sol3.cw,2);
+
 
 % Combine
 time = [time1;time2;time3];  % combined time

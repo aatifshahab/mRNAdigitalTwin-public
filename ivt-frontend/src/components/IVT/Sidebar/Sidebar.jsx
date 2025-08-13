@@ -1,14 +1,12 @@
-// src/components/IVT/Sidebar/Sidebar.jsx
-
 import React from 'react';
 import InputItem from '../InputItem/InputItem';
-import './Sidebar.css';
+import styles from './Sidebar.module.css';
 
 function Sidebar({ inputs, inputUnits, handleInputChange, handleTagClick, selectedInputVariable }) {
   return (
-    <div className="sidebar">
-      <h2>Input Variables</h2>
-      <div className="input-variables">
+    <div className={styles.sidebar}>
+      <h2 className={styles.title}>Input Variables</h2>
+      <div className={styles.inputVariables}>
         {Object.keys(inputs).map((name) => (
           <InputItem
             key={name}

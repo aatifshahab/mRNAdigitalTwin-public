@@ -1,14 +1,18 @@
 // src/components/Membrane/MembraneFigure/MembraneFigure.jsx
+
 import React from 'react';
 import styles from './MembraneFigure.module.css';
+import membraneDiagram from '../../utilits/tff.png';
 
 function MembraneFigure() {
   return (
     <div className={styles.figureContainer}>
-      <h3>Membrane Process Figure</h3>
-      <div className={styles.placeholder}>
-        [Diagram or Image of Membrane Filtration]
-      </div>
+     
+      <img
+        src={membraneDiagram}
+        alt="Schematic of tangential flow filtration"
+        className={styles.figureImage}
+      />
     </div>
   );
 }

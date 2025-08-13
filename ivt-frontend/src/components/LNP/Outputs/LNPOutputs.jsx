@@ -8,24 +8,36 @@ function LNPOutputs({ outputs }) {
   return (
     <div className={styles.outputsContainer}>
       <h2 className={styles.title}>Outputs</h2>
-
-      <div className={styles.outputItem}>
-        {/* Output Tag */}
+      {/* <div className={styles.outputItem}>
         <LNPVariableTag
           name="Diameter"
-          isSelected={false} // Set to true if you implement selection
-          onTagClick={() => {}} // Implement if needed
+          isSelected={false}
+          onTagClick={() => {}}
         />
       </div>
-
       <div className={styles.outputItem}>
         <LNPVariableTag
           name="PSD"
           isSelected={false}
           onTagClick={() => {}}
         />
+      </div> */}
+      <div className={styles.outputItem}>
+        <LNPVariableTag
+          name="EE"
+          isSelected={false}
+          onTagClick={() => {}}
+        />
+        <span>{outputs.EE.toFixed(2) !== null ? outputs.EE.toFixed(2) : 'N/A'}</span>
       </div>
-
+      <div className={styles.outputItem}>
+        <LNPVariableTag
+          name="Mass Fraction"
+          isSelected={false}
+          onTagClick={() => {}}
+        />
+        <span>{outputs.Fraction.toFixed(3) !== null ? outputs.Fraction.toFixed(3) : 'N/A'}</span>
+      </div>
       {outputs.error && (
         <div className={styles.error}>
           <span>Error: {outputs.error}</span>

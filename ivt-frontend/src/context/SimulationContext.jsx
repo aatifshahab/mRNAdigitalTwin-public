@@ -32,30 +32,64 @@ export const SimulationProvider = ({ children }) => {
    * @param {string} uniqueId
    * @returns {object|null} - The simulation result, or null if not found.
    */
-  const getUnitResult = async (uniqueId) => {
-    // 1) Check local storage
-    if (simulationStorage[uniqueId]) {
-      console.log(`getUnitResult: returning cached result for ${uniqueId}`);
-      return simulationStorage[uniqueId];
+  // const getUnitResult = async (uniqueId) => {
+  //   // 1) Check local storage
+  //   if (simulationStorage[uniqueId]) {
+  //     console.log(`getUnitResult: returning cached result for ${uniqueId}`);
+  //     return simulationStorage[uniqueId];
+  //   }
+
+  //   // 2) Otherwise, fetch from the backend
+  //   try {
+  //     const response = await axios.get(
+  //       `http://127.0.0.1:8000/get_unit_result?uniqueId=${uniqueId}`
+  //     );
+  //     // The endpoint returns: { "result": { ... your actual data ... } }
+  //     const fetchedResult = response.data.result;
+
+  //     // 3) Store in local memory
+  //     setSimulationStorage((prevStorage) => ({
+  //       ...prevStorage,
+  //       [uniqueId]: fetchedResult,
+  //     }));
+
+  //     return fetchedResult;
+  //   } catch (error) {
+  //     console.error(`Error fetching simulation data for ${uniqueId}:`, error);
+  //     return null;
+  //   }
+  // };
+
+
+    // Now takes both runId and the unit’s uniqueId
+  const getUnitResult = async (runId, unitUniqueId) => {
+    // 1) Check in-memory cache first
+    if (simulationStorage[unitUniqueId]) {
+      console.log(`getUnitResult: returning cached result for ${unitUniqueId}`);
+      return simulationStorage[unitUniqueId];
     }
 
-    // 2) Otherwise, fetch from the backend
+    // 2) Fetch from the backend using both params
     try {
       const response = await axios.get(
-        `http://127.0.0.1:8000/get_unit_result?uniqueId=${uniqueId}`
+        `http://127.0.0.1:8000/get_unit_result`
+        + `?run_id=${runId}`
+        + `&unit_uniqueId=${unitUniqueId}`
       );
-      // The endpoint returns: { "result": { ... your actual data ... } }
       const fetchedResult = response.data.result;
 
-      // 3) Store in local memory
-      setSimulationStorage((prevStorage) => ({
-        ...prevStorage,
-        [uniqueId]: fetchedResult,
+      // 3) Cache it under the unitUniqueId key
+      setSimulationStorage((prev) => ({
+        ...prev,
+        [unitUniqueId]: fetchedResult,
       }));
 
       return fetchedResult;
     } catch (error) {
-      console.error(`Error fetching simulation data for ${uniqueId}:`, error);
+      console.error(
+        `Error fetching simulation data for ${unitUniqueId}:`,
+        error
+      );
       return null;
     }
   };

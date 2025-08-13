@@ -16,6 +16,10 @@ def get_matlab_engine():
             eng.cd(backend_dir, nargout=0)
 
             # Add the Lyo folder to MATLAB's path
+            cctc_folder = os.path.join(backend_dir, 'cctc')
+            eng.addpath(cctc_folder, nargout=0)
+
+            # Add the Lyo folder to MATLAB's path
             lyo_folder = os.path.join(backend_dir, 'Lyo')
             eng.addpath(lyo_folder, nargout=0)
 
@@ -27,7 +31,7 @@ def get_matlab_engine():
             lnp_folder = os.path.join(backend_dir, 'LNP')
             eng.addpath(lnp_folder, nargout=0)
 
-            logging.info(f"MATLAB engine started. Path set to: {lyo_folder}, {membrane_folder}, and {lnp_folder}")
+            logging.info(f"MATLAB engine started. Path set to: {lyo_folder}, {cctc_folder}, {membrane_folder}, and {lnp_folder}")
         except Exception as e:
             logging.error(f"Failed to start MATLAB engine: {e}")
             raise RuntimeError(f"Failed to start MATLAB engine: {e}")
@@ -40,29 +44,41 @@ def run_cctc_model(states0_last_value):
         # Get the MATLAB engine instance
         eng = get_matlab_engine()
 
+        cwd = eng.pwd(nargout=1)
+        logging.info(f"[MATLAB] Current working directory: {cwd}")
+
+        location = eng.which('run_cctc_model', nargout=1)
+        if location:
+            logging.info(f"[MATLAB] Found run_cctc_model at: {location}")
+        else:
+            logging.warning("[MATLAB] run_cctc_model not found in MATLAB path!")
+
         # Convert the input to MATLAB data type
         states0_last_value_matlab = matlab.double([float(states0_last_value)])
         logging.info(f"Calling MATLAB function 'run_cctc_model' with input: {states0_last_value}")
         
+
         # Call the MATLAB function
-        tSol, unbound_mRNA = eng.run_cctc_model(states0_last_value_matlab, nargout=2)
+        tSol, unbound_mRNA, bound_mRNA = eng.run_cctc_model(states0_last_value_matlab, nargout=3)
         logging.info(f"Received unbound_mRNA from MATLAB: {unbound_mRNA}")
+        logging.info(f"Received bound_mRNA from MATLAB: {bound_mRNA}")
         logging.info(f"Received time data from MATLAB: {tSol}")
        
         # Convert the output to a NumPy array
         time = np.array(tSol).flatten().tolist()
         unbound_mRNA = np.array(unbound_mRNA).flatten()
+        bound_mRNA = np.array(bound_mRNA).flatten()
       
 
          # Calculate bound mRNA by subtracting unbound mRNA from the initial mRNA value
-        bound_mRNA = [states0_last_value - u for u in unbound_mRNA]
+        # bound_mRNA = [states0_last_value - u for u in unbound_mRNA]
 
-        logging.info(f"Calculated bound_mRNA: {bound_mRNA}")
+        # logging.info(f"Calculated bound_mRNA: {bound_mRNA}")
 
         return {
             "time": time,
             "unbound_mRNA": unbound_mRNA.tolist(),
-            "bound_mRNA": bound_mRNA
+            "bound_mRNA": bound_mRNA.tolist()
         }
     
     
@@ -173,6 +189,7 @@ def run_lyo_model(fluidVolume, massFractionmRNA, InitfreezingTemperature,
 def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterType):
     try:
         eng_instance = get_matlab_engine()
+        logging.info(f"Running membrane model with qF={qF}, mRNA={c0_mRNA}, protein={c0_protein}, ntp={c0_ntps}, conversion={X}, stages={n_stages}")
 
         # Convert Python values to MATLAB data types
         qF_matlab         = float(qF)
@@ -268,6 +285,7 @@ def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterT
             "Xactual": Xactual_val,
             "TFF_mRNA": TFF_mRNA_py
         }
+        logging.info(f"Membrane model outputs: {result}")
 
         return result
 
@@ -278,13 +296,10 @@ def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterT
 
 
 # LNP model call
-
-def run_lnp_model(Residential_time, FRR, pH, Ion, TF):
+def run_lnp_model(Residential_time, FRR, pH, Ion, TF, C_lipid, mRNA_in):
     try:
-        # Get the MATLAB engine instance
         eng = get_matlab_engine()
-
-        logging.info(f"Running LNP model with Residential_time={Residential_time}, FRR={FRR}, pH={pH}, Ion={Ion}, TF={TF}")
+        logging.info(f"Running LNP model with Residential_time={Residential_time}, FRR={FRR}, pH={pH}, Ion={Ion}, TF={TF}, C_lipid={C_lipid}, mRNA_in={mRNA_in}")
 
         # Convert inputs to MATLAB data types
         Residential_time_matlab = float(Residential_time)
@@ -292,25 +307,74 @@ def run_lnp_model(Residential_time, FRR, pH, Ion, TF):
         pH_matlab = float(pH)
         Ion_matlab = float(Ion)
         TF_matlab = float(TF)
+        C_lipid_matlab = float(C_lipid)
+        mRNA_in_matlab = float(mRNA_in)
 
-        # Call the MATLAB LNP function
-       
-        Diameter, PSD = eng.LNP(Residential_time_matlab, FRR_matlab, pH_matlab, Ion_matlab, TF_matlab, nargout=2)
+        # Call the MATLAB LNP function with 7 inputs and 5 outputs
+        Diameter, PSD, EE, mRNA_out, Fraction = eng.Main(
+            Residential_time_matlab,
+            FRR_matlab,
+            pH_matlab,
+            Ion_matlab,
+            TF_matlab,
+            C_lipid_matlab,
+            mRNA_in_matlab,
+            nargout=5
+        )
 
         logging.info("Received outputs from MATLAB LNP function.")
 
-        # Convert MATLAB outputs to Python lists
-        Diameter_py = np.array(Diameter).tolist()  # Assuming Diameter is a 2D array
-        PSD_py = np.array(PSD).tolist()            # Assuming PSD is a 2D array
+        # Convert MATLAB outputs to Python lists (if needed)
+        Diameter_py = np.array(Diameter).tolist()
+        PSD_py = np.array(PSD).tolist()
+        EE_py = float(EE)
+        mRNA_out_py = float(mRNA_out)
+        Fraction_py = float(Fraction)
 
         return {
             "Diameter": Diameter_py,
-            "PSD": PSD_py
+            "PSD": PSD_py,
+            "EE": EE_py,
+            "mRNA_out": mRNA_out_py,
+            "Fraction": Fraction_py,
         }
 
     except Exception as e:
         logging.error(f"Error in running MATLAB LNP function: {e}")
         raise RuntimeError(f"Error in running MATLAB LNP function: {e}")
+
+# def run_lnp_model(Residential_time, FRR, pH, Ion, TF):
+#     try:
+#         # Get the MATLAB engine instance
+#         eng = get_matlab_engine()
+
+#         logging.info(f"Running LNP model with Residential_time={Residential_time}, FRR={FRR}, pH={pH}, Ion={Ion}, TF={TF}")
+
+#         # Convert inputs to MATLAB data types
+#         Residential_time_matlab = float(Residential_time)
+#         FRR_matlab = float(FRR)
+#         pH_matlab = float(pH)
+#         Ion_matlab = float(Ion)
+#         TF_matlab = float(TF)
+
+#         # Call the MATLAB LNP function
+       
+#         Diameter, PSD = eng.LNP(Residential_time_matlab, FRR_matlab, pH_matlab, Ion_matlab, TF_matlab, nargout=2)
+
+#         logging.info("Received outputs from MATLAB LNP function.")
+
+#         # Convert MATLAB outputs to Python lists
+#         Diameter_py = np.array(Diameter).tolist()  # Assuming Diameter is a 2D array
+#         PSD_py = np.array(PSD).tolist()            # Assuming PSD is a 2D array
+
+#         return {
+#             "Diameter": Diameter_py,
+#             "PSD": PSD_py
+#         }
+
+#     except Exception as e:
+#         logging.error(f"Error in running MATLAB LNP function: {e}")
+#         raise RuntimeError(f"Error in running MATLAB LNP function: {e}")
 
 
 

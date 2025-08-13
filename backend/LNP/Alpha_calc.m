@@ -1,5 +1,6 @@
 function Alpha = Alpha_calc(pH, Ion, FRR)
 
+
 global delta
 global M
 clc

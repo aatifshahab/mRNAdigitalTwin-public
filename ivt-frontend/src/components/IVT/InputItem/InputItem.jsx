@@ -1,38 +1,36 @@
-// src/components/IVT/InputItem.jsx
+// src/components/IVT/InputItem/InputItem.jsx
 
 import React from 'react';
-import './InputItem.css';
-import { labelMapping } from '../../utilits/labelMapping'; // Adjust the path if necessary
+import styles from './InputItem.module.css';
+import { labelMapping } from '../../utilits/labelMapping';
 
 function InputItem({ name, value, unit, onTagClick, onValueChange, isSelected }) {
-  // Get the frontend label using the mapping
-  const displayName = labelMapping[name] || name;
+  const displayName = labelMapping[name] || name.replace(/_/g, ' ');
 
   return (
-    <div className="input-item">
+    <div className={styles.inputItem}>
       <div
-        className={`input-tag ${isSelected ? 'selected' : ''}`}
+        className={`${styles.inputTag} ${isSelected ? styles.selected : ''}`}
         onClick={onTagClick}
-        tabIndex="0"
+        tabIndex={0}
         role="button"
         aria-pressed={isSelected}
         onKeyPress={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            onTagClick();
-          }
+          if (e.key === 'Enter' || e.key === ' ') onTagClick();
         }}
       >
         {displayName}
       </div>
-      <div className="input-field">
+      <div className={styles.inputField}>
         <input
           type="number"
           value={value}
           onChange={onValueChange}
           step="any"
           min="0"
+          className={styles.input}
         />
-        <span>{unit}</span>
+        <span className={styles.unit}>{unit}</span>
       </div>
     </div>
   );

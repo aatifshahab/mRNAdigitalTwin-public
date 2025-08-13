@@ -30,3 +30,15 @@
   border-radius: 4px;
   text-align: center;
 }
+
+
+.outputItem {
+  display: flex;         /* lay children out in a row */
+  align-items: center;   /* vertically center tag + value */
+  gap: 0.5rem;           /* space between tag and number */
+}
+
+.outputItem span {
+  font-size: 18px;       /* bump the value up to 18px */
+  /* margin-left: 8px;   you can use margin-left instead of gap if you prefer */
+}

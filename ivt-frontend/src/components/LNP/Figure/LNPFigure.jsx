@@ -3,14 +3,20 @@
 import React from 'react';
 import styles from './LNPFigure.module.css';
 
+
+import lnpDiagram from '../../utilits/lnp.png'; 
+
+
 function LNPFigure() {
   return (
     <div className={styles.figureContainer}>
-      <h2>LNP Figure</h2>
-      <div className={styles.placeholder}>
-        {/* Placeholder for future figures */}
-        <p>Figure Placeholder</p>
-      </div>
+
+      {/* SHOW THE REAL FIGURE */}
+      <img
+        src={lnpDiagram}
+       
+        className={styles.figureImage}
+      />
     </div>
   );
 }

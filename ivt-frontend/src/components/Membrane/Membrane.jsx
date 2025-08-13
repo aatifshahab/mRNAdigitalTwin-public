@@ -19,6 +19,9 @@ import './Membrane.module.css';
 function Membrane() {
   const location = useLocation();
   const { getUnitResult, addChainResult } = useContext(SimulationContext);
+  const params        = new URLSearchParams(location.search);
+  const runId         = params.get('run_id');         // e.g. “0682…”
+  const unitUniqueId  = params.get('unit_uniqueId');
 
   // -----------------------------------
   // 1. State Management
@@ -80,16 +83,16 @@ function Membrane() {
     const params = new URLSearchParams(location.search);
     const uniqueId = params.get('uniqueId');
 
-    if (!uniqueId) {
+    if (!unitUniqueId) {
       setLoading(false);
-      return; // No chain mode => standalone
+      return; 
     }
 
     (async () => {
       try {
-        const result = await getUnitResult(uniqueId);
+        const result = await getUnitResult(runId, unitUniqueId);
         if (!result) {
-          setError(`No Membrane result found for uniqueId=${uniqueId}`);
+          setError(`No Membrane result found for uniqueId=${unitUniqueId}`);
         } else {
           // "result" shape: { time_points, x_positions, Cmatrix_mRNA, ... }
           setTimePoints(result.time_points || []);
@@ -115,7 +118,7 @@ function Membrane() {
         setLoading(false);
       }
     })();
-  }, [location.search, getUnitResult]);
+  }, [runId, unitUniqueId, getUnitResult]);
 
   // -----------------------------------
   // 3. Handle Input Changes
@@ -241,8 +244,8 @@ function Membrane() {
   // -----------------------------------
   // 6. Render
   // -----------------------------------
-  const params = new URLSearchParams(location.search);
-  const isChainMode = !!params.get('uniqueId');
+  // const isChainMode = !!params.get('uniqueId');
+  const isChainMode = !!unitUniqueId;
 
   return (
     <div className="membrane-container">

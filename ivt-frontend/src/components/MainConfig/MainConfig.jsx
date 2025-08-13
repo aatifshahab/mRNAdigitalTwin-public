@@ -1,6 +1,7 @@
 // src/components/MainConfig/MainConfig.jsx
 
 import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './MainConfig.module.css';
 import { SimulationContext } from '../../context/SimulationContext';
 import { v4 as uuidv4 } from 'uuid';
@@ -14,6 +15,8 @@ function MainConfig() {
     { id: 'lnp', name: 'LNP Unit' },
     { id: 'lyo', name: 'Freeze-drying Unit' },
   ];
+
+  const navigate = useNavigate();
 
   // State for arranged units in the process flow
   const [processFlow, setProcessFlow] = useState([]);
@@ -90,11 +93,13 @@ function MainConfig() {
         };
       case 'lnp':
         return {
-          Residential_time: 60.0,
+          Residential_time: 3600.0,
           FRR: 3.0,
           pH: 5.5,
           Ion: 0.1,
           TF: 0.0,
+          C_lipid: 10.0, 
+          mRNA_in: 10.0,
         };
       case 'lyo':
         return {
@@ -120,7 +125,10 @@ function MainConfig() {
 
   // Open a unit in a new tab (simpler approach)
   const openOrFocusWindow = (unit) => {
-    const url = `${window.location.origin}/${unit.id}?uniqueId=${unit.uniqueId}`;
+    // const url = `${window.location.origin}/${unit.id}?uniqueId=${unit.uniqueId}`;
+    const url =
+    `${window.location.origin}/${unit.id}` +
+    `?unit_uniqueId=${unit.uniqueId}`;
     const windowFeatures = 'width=800,height=600';
 
     // Always open in a new tab/window
@@ -337,6 +345,10 @@ function MainConfig() {
 
       {/* Error Message */}
       {error && <div className={styles.errorMessage}>{error}</div>}
+
+      <button onClick={() => navigate('/all-runs')}>
+        View Past Runs / Compare
+      </button>
     </div>
   );
 }

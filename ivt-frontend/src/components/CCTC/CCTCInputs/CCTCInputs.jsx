@@ -33,7 +33,7 @@ function CCTCInputs({ cctcInputs, handleCCTCInputChange, selectedTag, setSelecte
       <h2>Input Variables</h2>
       <div className="cctc-input-fields">
         {/* Flow Rate (F103) */}
-        <div className="cctc-input-item">
+        {/* <div className="cctc-input-item">
           <CCTCTag
             label="F103"
             
@@ -52,7 +52,7 @@ function CCTCInputs({ cctcInputs, handleCCTCInputChange, selectedTag, setSelecte
             />
             <span className="cctc-input-unit">L/hr</span>
           </div>
-        </div>
+        </div> */}
 
         {/* Concentration of mRNA */}
         <div className="cctc-input-item">
@@ -96,7 +96,7 @@ function CCTCInputs({ cctcInputs, handleCCTCInputChange, selectedTag, setSelecte
               placeholder="Coming Soon"
               disabled={true}
             />
-            <span className="cctc-input-unit">g/L</span>
+            <span className="cctc-input-unit"></span>
           </div>
         </div>
       </div>

@@ -1,0 +1,29 @@
+
+/* src/components/Graphs/Graphs.module.css */
+
+.graphs {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 5px;
+  margin-bottom: 10px;
+  margin-left: 430px;
+}
+
+.graphSection {
+  flex: 1;
+  min-width: 450px;
+  max-width: 400px;
+  height: 300px;
+  background-color: lightgray;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px lightgray;
+  overflow: hidden;
+}
+
+.graphSection h3 {
+  text-align: center;
+  margin-bottom: 0px;
+  color: #333333;
+}

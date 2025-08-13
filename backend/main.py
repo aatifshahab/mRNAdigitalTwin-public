@@ -23,6 +23,11 @@ from conversions import (
     convert_mg_ml_to_g_l
 )
 
+# Imports for data storage
+import uuid
+from datetime import datetime
+from db_storage import init_db, store_run_in_db, get_run_from_db
+
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
 
@@ -40,109 +45,10 @@ app.add_middleware(
 # In-memory storage for simulation results
 simulation_storage: Dict[str, dict] = {}
 
-#############################################################################
-# COMMENTED-OUT: Individual Endpoints (IVT, CCTC, etc.)
-# If you only allow simulations via /run_chain, you can comment these out:
-#############################################################################
-"""
-@app.post("/run_simulation", response_model=IVTOutput)
-async def run_simulation(input_data: IVTInput = Body(...)):
-    logging.info("Received IVT simulation request (Standalone).")
-    try:
-        result = run_ivt_process(input_data)
-        # If you wanted to store and return a uniqueId here, you would do so:
-        # unique_id = str(uuid4())  # import from uuid if needed
-        # simulation_storage[unique_id] = result
-        # return {"uniqueId": unique_id, **result}
-        return result
-    except Exception as e:
-        logging.error(f"IVT simulation failed: {e}")
-        return {"error": str(e)}
+# Initialize database on startup
+init_db()
 
 
-@app.post("/run_cctc", response_model=CCTCOutput)
-async def run_cctc(input_data: CCTCInput = Body(...)):
-    logging.info("Received CCTC simulation request (Standalone).")
-    try:
-        result = run_cctc_model(input_data.states0_last_value)
-        return result
-    except Exception as e:
-        logging.error(f"CCTC simulation failed: {e}")
-        return {"error": str(e)}
-
-
-@app.post("/run_lyo", response_model=LyoOutput)
-async def run_lyo(input_data: LyoInput = Body(...)):
-    logging.info("Received Lyo simulation request (Standalone).")
-    try:
-        result = run_lyo_model(
-            fluidVolume=input_data.fluidVolume,
-            massFractionmRNA=input_data.massFractionmRNA,
-            InitfreezingTemperature=input_data.InitfreezingTemperature,
-            InitprimaryDryingTemperature=input_data.InitprimaryDryingTemperature,
-            InitsecondaryDryingTemperature=input_data.InitsecondaryDryingTemperature,
-            TempColdGasfreezing=input_data.TempColdGasfreezing,
-            TempShelfprimaryDrying=input_data.TempShelfprimaryDrying,
-            TempShelfsecondaryDrying=input_data.TempShelfsecondaryDrying,
-            Pressure=input_data.Pressure
-        )
-        return LyoOutput(**result)
-    except Exception as e:
-        logging.error(f"Lyo simulation failed: {e}")
-        return LyoOutput(error=str(e))
-
-
-@app.post("/run_membrane", response_model=MembraneOutput)
-async def run_membrane(input_data: MembraneInput = Body(...)):
-    logging.info("Received Membrane simulation request (Standalone).")
-    try:
-        result = run_membrane_model(
-            qF=input_data.qF,
-            c0_mRNA=input_data.c0_mRNA,
-            c0_protein=input_data.c0_protein,
-            c0_ntps=input_data.c0_ntps,
-            X=input_data.X,
-            n_stages=input_data.n_stages,
-            D=input_data.D,
-            filterType=input_data.filterType
-        )
-        return MembraneOutput(**result)
-    except Exception as e:
-        logging.error(f"Membrane simulation failed: {e}")
-        return MembraneOutput(
-            time_points=[],
-            x_positions=[],
-            Cmatrix_mRNA=[],
-            Cmatrix_protein=[],
-            Cmatrix_ntps=[],
-            interpolated_times=[],
-            interpolated_indices=[],
-            td=[],
-            TFF_protein=[],
-            TFF_ntps=[],
-            TFF_mRNA=[],
-            Jcrit=0.0,
-            Xactual=0.0,
-            error=str(e)
-        )
-
-
-@app.post("/run_lnp", response_model=LNPOutput)
-async def run_lnp(input_data: LNPInput = Body(...)):
-    logging.info("Received LNP simulation request (Standalone).")
-    try:
-        result = run_lnp_model(
-            Residential_time=input_data.Residential_time,
-            FRR=input_data.FRR,
-            pH=input_data.pH,
-            Ion=input_data.Ion,
-            TF=input_data.TF
-        )
-        return LNPOutput(**result)
-    except Exception as e:
-        logging.error(f"LNP simulation failed: {e}")
-        return LNPOutput(error=str(e))
-"""
 
 #############################################################################
 # PRIMARY ENDPOINT: Run a Chain of Simulations
@@ -158,96 +64,133 @@ async def run_chain(chain_request: ChainRequest):
     last_output = {}
 
     try:
-        for idx, unit in enumerate(chain_request.chain):
-            unit_id = unit.id
-            inputs = unit.inputs.copy()  # copy to avoid accidental mutation
-
-            # 1. Enforce unit sequence rules: No units after LNP except Lyo
-            if idx > 0:
-                prev_unit = chain_request.chain[idx - 1].id
-                if prev_unit == 'lnp' and unit_id != 'lyo':
-                    error_msg = "Only Lyophilization can follow LNP."
+        # Preliminary chain restriction:
+        if len(chain_request.chain) > 1:
+            # Ensure IVT, if present, is the first unit.
+            for idx, unit in enumerate(chain_request.chain):
+                if unit.id == 'ivt' and idx != 0:
+                    error_msg = "IVT must be the first unit in a chain."
                     logging.error(error_msg)
                     return {"error": error_msg}
+            # Ensure that if LYO is present, it follows LNP and nothing comes after LNP except LYO.
+            for idx, unit in enumerate(chain_request.chain):
+                if unit.id == 'lnp' and idx < len(chain_request.chain) - 1:
+                    next_unit = chain_request.chain[idx + 1].id
+                    if next_unit != 'lyo':
+                        error_msg = "Only Lyophilization (LYO) can follow LNP."
+                        logging.error(error_msg)
+                        return {"error": error_msg}
 
-            # 2. Handle any necessary data conversions from last_output
+        # Process each unit in the chain.
+        for idx, unit in enumerate(chain_request.chain):
+            unit_id = unit.id
+            inputs = unit.inputs.copy()  # Copy inputs to avoid accidental mutation.
+            prev_unit = chain_request.chain[idx - 1].id if idx > 0 else None
+
+            # Unit conversions based on previous unit's output in last_output:
             if unit_id == 'membrane' and 'final_mRNA' in last_output:
-                # Example: IVT outputs mRNA in µM, convert to mg/mL for Membrane
-                inputs['c0_mRNA'] = convert_uM_to_mg_per_ml(
-                    last_output['final_mRNA'],
-                    molar_mass=660000  # adjust as needed
-                )
-            elif unit_id == 'cctc' and 'final_mRNA' in last_output:
-                # Example: Membrane outputs mRNA in mg/mL, convert to g/L for CCTC
-                inputs['states0_last_value'] = convert_mg_ml_to_g_l(
-                    last_output['final_mRNA']
-                )
+                # Membrane expects mRNA in mg/mL.
+                if prev_unit == 'ivt':
+                    # IVT outputs mRNA in μM; convert to mg/mL.
+                    inputs['c0_mRNA'] = convert_uM_to_mg_per_ml(last_output['final_mRNA'], molar_mass=660000)
+                elif prev_unit == 'cctc':
+                    # CCTC outputs in g/L (numerically equal to mg/mL).
+                    inputs['c0_mRNA'] = last_output['final_mRNA']
+                else:
+                    inputs['c0_mRNA'] = last_output['final_mRNA']
 
-            # 3. Run the simulation for this unit
+            elif unit_id == 'cctc' and 'final_mRNA' in last_output:
+                # CCTC expects mRNA in g/L.
+                if prev_unit == 'ivt':
+                    inputs['states0_last_value'] = convert_uM_to_mg_per_ml(last_output['final_mRNA'], molar_mass=660000)
+                elif prev_unit == 'membrane':
+                    inputs['states0_last_value'] = last_output['final_mRNA']
+                elif prev_unit == 'cctc':
+                    inputs['states0_last_value'] = last_output['final_mRNA']
+                else:
+                    inputs['states0_last_value'] = last_output['final_mRNA']
+
+            elif unit_id == 'lnp' and 'final_mRNA' in last_output:
+                # LNP expects its mRNA input (C_mRNA) in mg/mL.
+                if prev_unit == 'ivt':
+                    inputs['C_mRNA'] = convert_uM_to_mg_per_ml(last_output['final_mRNA'], molar_mass=660000)
+                elif prev_unit in ['membrane', 'cctc']:
+                    inputs['C_mRNA'] = last_output['final_mRNA']
+                else:
+                    inputs['C_mRNA'] = last_output['final_mRNA']
+
+            elif unit_id == 'lyo' and 'final_mRNA' in last_output:
+                # LYO takes the mass fraction (Fraction) from LNP.
+                if prev_unit == 'lnp':
+                    inputs['massFractionmRNA'] = last_output['final_mRNA']
+
+            # Run simulation for the current unit:
             if unit_id == 'ivt':
                 result = run_ivt_process(IVTInput(**inputs))
-                # Extract final_mRNA from 'TotalRNAo'
                 if 'TotalRNAo' in result and result['TotalRNAo']:
                     final_mRNA = result['TotalRNAo'][-1]
                 else:
                     final_mRNA = None
                     logging.warning("IVT output missing or empty 'TotalRNAo'.")
-
             elif unit_id == 'membrane':
                 membrane_input = MembraneInput(**inputs)
                 result = run_membrane_model(**membrane_input.dict())
-                # Extract final_mRNA from the last element in 'TFF_mRNA'
-                if (
-                    'TFF_mRNA' in result 
-                    and result['TFF_mRNA'] 
-                    and isinstance(result['TFF_mRNA'][-1], list) 
-                    and result['TFF_mRNA'][-1]
-                ):
+                if ('TFF_mRNA' in result and result['TFF_mRNA'] and 
+                    isinstance(result['TFF_mRNA'][-1], list) and result['TFF_mRNA'][-1]):
                     final_mRNA = result['TFF_mRNA'][-1][-1]
                 else:
                     final_mRNA = None
                     logging.warning("Membrane output missing or empty 'TFF_mRNA'.")
-
             elif unit_id == 'cctc':
                 cctc_input = CCTCInput(**inputs)
                 result = run_cctc_model(cctc_input.states0_last_value)
-                # Extract final_mRNA from 'bound_mRNA'
                 if 'bound_mRNA' in result and result['bound_mRNA']:
                     final_mRNA = result['bound_mRNA'][-1]
                 else:
                     final_mRNA = None
                     logging.warning("CCTC output missing or empty 'bound_mRNA'.")
-
             elif unit_id == 'lnp':
                 lnp_input = LNPInput(**inputs)
                 result = run_lnp_model(**lnp_input.dict())
-                final_mRNA = None  # LNP doesn't pass mRNA to next units
-
+                if 'Fraction' in result and result['Fraction'] is not None:
+                    final_mRNA = result['Fraction']
+                else:
+                    final_mRNA = None
             elif unit_id == 'lyo':
                 lyo_input = LyoInput(**inputs)
                 result = run_lyo_model(**lyo_input.dict())
                 final_mRNA = None
-
             else:
                 error_msg = f"Unknown unit ID: {unit_id}"
                 logging.error(error_msg)
                 return {"error": error_msg}
 
-            # 4. Store the result in memory under this unit's uniqueId
+            # Store and update results:
             simulation_storage[unit.uniqueId] = result
-
-            # 5. Append to the chain results array
             chain_results.append({
                 "unitId": unit_id,
                 "uniqueId": unit.uniqueId,
                 "result": result
             })
-
-            # 6. Update last_output if we have final_mRNA
             if final_mRNA is not None:
                 last_output['final_mRNA'] = final_mRNA
 
         logging.info("Chain simulation completed successfully.")
+        
+        # === NEW CODE TO STORE THE RUN ===
+        chain_results_response = {"chainResults": chain_results}
+        run_id = str(uuid.uuid4())
+        timestamp_str = datetime.utcnow().isoformat()
+        store_run_in_db(
+            run_id=run_id,
+            timestamp_str=timestamp_str,
+            chain_request=chain_request.dict(),  # You might use model_dump() if using Pydantic V2+
+            chain_results=chain_results_response
+        )
+        chain_results_response["runId"] = run_id
+        # ====================================
+        
+        
         return {"chainResults": chain_results}
 
     except Exception as e:
@@ -257,20 +200,72 @@ async def run_chain(chain_request: ChainRequest):
 #############################################################################
 # ENDPOINT TO RETRIEVE RESULTS BY UNIQUE ID
 #############################################################################
-@app.get("/get_unit_result", response_model=UnitResult)
-async def get_unit_result(uniqueId: str):
-    """
-    Endpoint to retrieve simulation results for a specific unit by uniqueId.
-    """
-    if uniqueId in simulation_storage:
-        return {"result": simulation_storage[uniqueId]}
-    else:
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Simulation result not found for uniqueId={uniqueId}."
-        )
+# @app.get("/get_unit_result", response_model=UnitResult)
+# async def get_unit_result(uniqueId: str):
+#     """s
+#     Endpoint to retrieve simulation results for a specific unit by uniqueId.
+#     """
+#     if uniqueId in simulation_storage:
+#         return {"result": simulation_storage[uniqueId]}
+#     else:
+#         raise HTTPException(
+#             status_code=404, 
+#             detail=f"Simulation result not found for uniqueId={uniqueId}."
+#         )
 
+@app.get("/get_unit_result", response_model=UnitResult)
+async def get_unit_result(run_id: str, unit_uniqueId: str):
+    """
+    1) First try in-memory cache (for newly run sims)
+    2) Then load historic run by run_id from SQLite
+    3) Return only that unit’s result
+    """
+    # 1) In-memory
+    if unit_uniqueId in simulation_storage:
+        return {"result": simulation_storage[unit_uniqueId]}
+
+    # 2) Fetch the full run from your DB
+    run = get_run_from_db(run_id)
+    if run is None:
+        raise HTTPException(404, f"Run not found for run_id={run_id}")
+
+    # 3) Look inside the stored JSON for the matching unit
+    for u in run["chain_results"].get("chainResults", []):
+        if u.get("uniqueId") == unit_uniqueId:
+            return {"result": u["result"]}
+
+    # 4) If nothing matched
+    raise HTTPException(
+        404,
+        f"No simulation result for unit_uniqueId={unit_uniqueId} in run {run_id}"
+    )
+
+
+@app.get("/get_all_runs")
+def get_all_runs_endpoint():
+    """
+    Returns a list of all simulation runs with their run_id and timestamp.
+    """
+    from db_storage import get_all_runs  # Import the helper function from db_storage module
+    runs = get_all_runs()
+    if not runs:
+        raise HTTPException(status_code=404, detail="No simulation runs found.")
+    return {"runs": runs}
 #############################################################################
+@app.get("/get_run_details")
+def get_run_details(run_id: str):
+    """
+    Returns the full run data (chain_request + chain_results)
+    for a given run_id from the database.
+    """
+    print(f"[BACKEND] api_get_run called with run_id={run_id!r}")
+    run_data = get_run_from_db(run_id)
+    print(f"[BACKEND] get_run_from_db returned: {run_data}")
+    if run_data is None:
+        raise HTTPException(status_code=404, detail="Run ID not found.")
+    return run_data
+
+
 
 if __name__ == "__main__":
     import uvicorn

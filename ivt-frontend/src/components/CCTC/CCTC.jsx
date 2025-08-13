@@ -14,6 +14,9 @@ import './CCTC.css';
 function CCTC() {
   const location = useLocation();
   const { getUnitResult, addChainResult } = useContext(SimulationContext);
+  const params        = new URLSearchParams(location.search);
+  const runId         = params.get('run_id');         // e.g. "0682…"
+  const unitUniqueId  = params.get('unit_uniqueId');
 
   // -----------------------------------
   // 1. State Management
@@ -21,7 +24,7 @@ function CCTC() {
   const [cctcInputs, setCctcInputs] = useState({
     F103: 1.0,
     mRNA: 0.5,
-    resin: 0.0,
+    resin: 0.2,
   });
 
   // We'll store the time arrays, etc. in cctcOutputs
@@ -39,11 +42,10 @@ function CCTC() {
   // 2. Check for uniqueId in the URL (Chain Mode)
   // -----------------------------------
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const uniqueId = params.get('uniqueId');
+   
 
     // If no uniqueId => Standalone usage
-    if (!uniqueId) {
+    if (!unitUniqueId) {
       setLoading(false);
       return;
     }
@@ -51,10 +53,10 @@ function CCTC() {
     // If we do have a uniqueId => attempt to fetch chain results
     (async () => {
       try {
-        const fetched = await getUnitResult(uniqueId);
+        const fetched = await getUnitResult(runId, unitUniqueId);
         if (!fetched) {
           // Could be a 404 or some other error
-          setError(`No simulation result found for uniqueId=${uniqueId}`);
+          setError(`No simulation result for run=${runId}, unit=${unitUniqueId}`);
         } else {
           // fetched should look like { time: [...], unbound_mRNA: [...], bound_mRNA: [...] }
           setCctcOutputs({
@@ -70,7 +72,7 @@ function CCTC() {
       }
       setLoading(false);
     })();
-  }, [location.search, getUnitResult]);
+  }, [runId, unitUniqueId, getUnitResult]);
 
   // -----------------------------------
   // 3. Handle Input Changes
@@ -173,8 +175,9 @@ function CCTC() {
   // 6. Render
   // -----------------------------------
   // If we're in chain mode (uniqueId in URL), we won't show the 'Run CCTC Unit' button
-  const params = new URLSearchParams(location.search);
-  const isChainMode = !!params.get('uniqueId');
+ 
+  // const isChainMode = !!params.get('uniqueId');
+  const isChainMode = !!unitUniqueId;
 
   return (
     <div className="cctc-container">

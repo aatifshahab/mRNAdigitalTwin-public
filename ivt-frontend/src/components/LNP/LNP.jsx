@@ -16,21 +16,29 @@ import LNPRun from './Run/LNPRun';
 function LNP() {
   const location = useLocation();
   const { getUnitResult, addChainResult } = useContext(SimulationContext);
+  const params        = new URLSearchParams(location.search);
+  const runId         = params.get('run_id');         // the top‐level run UUID
+  const unitUniqueId  = params.get('unit_uniqueId');
+  const uniqueId = params.get('uniqueId');
 
   // -----------------------------------
   // 1. State: Inputs and Outputs
   // -----------------------------------
   const [inputs, setInputs] = useState({
-    Residential_time: 60, 
+    Residential_time: 3600, 
     FRR: 3,
     pH: 5.5,
     Ion: 0.1,
     TF: 0,
+    C_lipid: 10,    
+    mRNA_in: 10,
   });
 
   const [outputs, setOutputs] = useState({
     Diameter: [],
     PSD: [],
+    EE: null,       
+    Fraction: null,
     error: null,
   });
 
@@ -43,10 +51,9 @@ function LNP() {
   // 2. Check if there's a uniqueId in the URL => Chain Mode
   // -----------------------------------
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const uniqueId = params.get('uniqueId');
+    
 
-    if (!uniqueId) {
+    if ( !unitUniqueId) {
       // Standalone mode => skip fetch
       setLoading(false);
       return;
@@ -55,13 +62,15 @@ function LNP() {
     // If chain mode, fetch from the backend (via context)
     (async () => {
       try {
-        const result = await getUnitResult(uniqueId);
+        const result = await getUnitResult(runId, unitUniqueId);
         if (!result) {
-          setError(`No LNP result found for uniqueId=${uniqueId}`);
+          setError(`No LNP result found for uniqueId=${unitUniqueId}`);
         } else {
           setOutputs({
             Diameter: result.Diameter || [],
             PSD: result.PSD || [],
+            EE:       result.EE         != null ? result.EE       : null,
+            Fraction: result.Fraction   != null ? result.Fraction : null,
             error: result.error || null,
           });
         }
@@ -71,7 +80,7 @@ function LNP() {
       }
       setLoading(false);
     })();
-  }, [location.search, getUnitResult]);
+  }, [runId, unitUniqueId, getUnitResult]);
 
   // -----------------------------------
   // 3. Handle Input Changes
@@ -164,8 +173,8 @@ function LNP() {
   };
 
   // Check chain vs. standalone
-  const params = new URLSearchParams(location.search);
-  const isChainMode = !!params.get('uniqueId');
+  // const isChainMode = !!params.get('uniqueId');
+  const isChainMode = !!unitUniqueId;
 
   return (
     <div className={styles.lnpContainer}>

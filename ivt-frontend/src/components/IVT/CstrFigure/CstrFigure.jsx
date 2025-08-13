@@ -3,14 +3,14 @@
 import React from 'react';
 import cstrImage from '../../utilits/cstr.png';
 import CstrConnections from '../CstrConnections/CstrConnections';
-import './CstrFigure.css';
+import styles from './CstrFigure.module.css';
 
 function CstrFigure() {
   return (
-    <div className="cstr-figure-container">
-      <div className="cstr-figure-wrapper">
-        <img src={cstrImage} alt="CSTR" className="cstr-image" />
-        <CstrConnections /> {/* Render the connections overlay */}
+    <div className={styles.container}>
+      <div className={styles.wrapper}>
+        <img src={cstrImage} alt="CSTR" className={styles.image} />
+        <CstrConnections />
       </div>
     </div>
   );

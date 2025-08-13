@@ -1,4 +1,4 @@
-// src/components/InputGraph.jsx
+// src/components/InputGraph/InputGraph.jsx
 
 import React from 'react';
 import { Line } from 'react-chartjs-2';
@@ -12,8 +12,8 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { formatNumber } from '../../utilits/formatNumber'; 
-import './InputGraph.css';
+import { formatNumber } from '../../utilits/formatNumber';
+import styles from './InputGraph.module.css';
 
 // Register necessary Chart.js components
 ChartJS.register(
@@ -27,122 +27,72 @@ ChartJS.register(
 );
 
 function InputGraph({ inputName, timeData, inputData, unit }) {
- 
+  if (!timeData || !inputData || inputData.length === 0) {
+    return <p>No data available for {inputName}.</p>;
+  }
 
-  // Get the last value from inputData and format it
+  // Get the last value and format
   const lastValue = formatNumber(inputData[inputData.length - 1]);
 
-  // Determine y-axis bounds for smoother scaling
+  // Determine y-axis bounds
   const maxDataPoint = Math.max(...inputData);
   const minDataPoint = Math.min(...inputData);
 
-  // Prepare data for the chart
+  // Chart data
   const chartData = {
     labels: timeData,
     datasets: [
       {
-        label: `${inputName} (${lastValue} ${unit}) `,
+        label: `${inputName} (${lastValue} ${unit})`,
         data: inputData,
         fill: false,
-        backgroundColor: 'rgba(128, 128, 128, 0.6)', // Grey color
-        borderColor: 'rgba(128, 128, 128, 1)', // Grey color
+        backgroundColor: 'rgba(128,128,128,0.6)',
+        borderColor: 'rgba(128,128,128,1)',
         tension: 0.1,
         pointRadius: 3,
       },
     ],
   };
 
-  // Prepare chart options
+  // Chart options
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    
     plugins: {
       legend: {
         display: true,
         labels: {
-          generateLabels: (chart) => {
-            const datasets = chart.data.datasets;
-            return datasets.map((dataset) => ({
-              text: dataset.label,
-              fillStyle: 'rgba(0,0,0,0)', // Fully transparent color box
-              strokeStyle: 'rgba(0,0,0,0)', // Fully transparent border
-              lineWidth: 0,
-              hidden: false,
-              index: dataset.index,
-            }));
-          },
-          font: {
-            size: 16,
-            family: 'Arial',
-            weight: 'bold',
-          },
-          color: '#333333', // Dark grey text
+          generateLabels: (chart) =>
+            chart.data.datasets.map((ds) => ({ text: ds.label, fillStyle: 'rgba(0,0,0,0)', strokeStyle: 'rgba(0,0,0,0)', lineWidth: 0, hidden: false, index: ds.index })),
+          font: { size: 16, family: 'Arial', weight: 'bold' },
+          color: '#333333',
         },
       },
       tooltip: {
         callbacks: {
-          label: function (context) {
-            const label = context.dataset.label || '';
-            return `${label}: ${formatNumber(context.parsed.y)}`;
-          },
+          label: (context) => formatNumber(context.parsed.y),
         },
       },
     },
     scales: {
       x: {
-        title: {
-          display: true,
-          text: 'Time (hr)',
-          color: '#333333', // Dark grey text
-          font: {
-            size: 14,
-            weight: 'bold',
-          },
-        },
-        ticks: {
-          color: '#333333', // Dark grey text
-        },
-        grid: {
-          color: '#bfbfbf', // Light grey grid lines
-          borderColor: '#bfbfbf', // Light grey borders
-        },
+        title: { display: true, text: 'Time (hr)', font: { size: 14, weight: 'bold' }, color: '#333333' },
+        ticks: { color: '#333333' },
+        grid: { color: '#bfbfbf', borderColor: '#bfbfbf' },
       },
       y: {
-        title: {
-          display: true,
-          text: `${inputName} (${unit})`,
-          color: '#333333', // Dark grey text
-          font: {
-            size: 14,
-            weight: 'bold',
-          },
-        },
-        ticks: {
-          color: '#333333', // Dark grey text
-          callback: function (value) {
-            return formatNumber(value); // Format y-axis tick labels
-          },
-          stepSize: (maxDataPoint - minDataPoint) / 5, // Example step size for 5 ticks
-        },
-        grid: {
-          color: '#bfbfbf', // Light grey grid lines
-          borderColor: '#bfbfbf', // Light grey borders
-        },
-        beginAtZero: false,
-        suggestedMin: minDataPoint * 1,
-        suggestedMax: maxDataPoint * 1,
+        title: { display: true, text: `${inputName} (${unit})`, font: { size: 14, weight: 'bold' }, color: '#333333' },
+        ticks: { color: '#333333', callback: (v) => formatNumber(v), stepSize: (maxDataPoint - minDataPoint) / 5 },
+        grid: { color: '#bfbfbf', borderColor: '#bfbfbf' },
+        suggestedMin: minDataPoint * 0.9,
+        suggestedMax: maxDataPoint * 1.1,
       },
     },
-    elements: {
-      line: {
-        borderWidth: 2,
-      },
-    },
+    elements: { line: { borderWidth: 2 } },
   };
 
   return (
-    <div className="input-variable-graph" style={{ width: '100%', height: '100%' }} >
+    <div className={styles.inputVariableGraph}>
       <Line data={chartData} options={chartOptions} />
     </div>
   );

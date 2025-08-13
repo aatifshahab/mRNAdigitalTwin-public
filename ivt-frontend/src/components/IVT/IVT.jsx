@@ -4,24 +4,36 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar/Sidebar';
 import MeasuredVariables from './MeasuredVariables/MeasuredVariables';
-import OutputVariables from './OutputVariables/OutputVariables';
+// import OutputVariables from './OutputVariables/OutputVariables';
 import CstrFigure from './CstrFigure/CstrFigure';
 import Graphs from './Graphs/Graphs';
 import RunPlant from './RunPlant/RunPlant';
 // import axios from 'axios';  // We can just use fetch instead if we like
-import './IVT.css';
+import  styles from './IVT.module.css';
 import { labelMapping } from '../utilits/labelMapping';
 import { calculateF102 } from '../utilits/calculateF102';
 import { SimulationContext } from '../../context/SimulationContext'; 
 import { v4 as uuidv4 } from 'uuid';
+import UpdatedOutput from './UpdatedOutput/UpdatedOutput';
+// in src/components/Graphs/Graphs.jsx (or IVT.jsx)
+
+
+
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
 function IVT() {
-  const query = useQuery();
+  const query    = useQuery();
+  const { search } = useLocation();
   const uniqueId = query.get('uniqueId');
+  const params        = new URLSearchParams(search);
+  const runId         = query.get('run_id');        
+  const unitUniqueId  = query.get('unit_uniqueId');  
+  const isChainMode   = !!unitUniqueId;
+
+
   const { getUnitResult, addChainResult } = useContext(SimulationContext);
 
   // -----------------------------------
@@ -54,7 +66,7 @@ function IVT() {
     Phosphate: [0.00],
     pH: [7.00],
     Mg: [0.00],
-    mRNA: [0.00],
+    // mRNA: [0.00],
   });
   const [measuredUnits, setMeasuredUnits] = useState({
     ATP: 'mM',
@@ -68,13 +80,16 @@ function IVT() {
   });
 
   // State for output variables
-  const [outputVariables, setOutputVariables] = useState({
-    F102: [0.00],
-  });
-  const [outputUnits, setOutputUnits] = useState({
-    F102: 'L/hr',
-  });
+  // const [outputVariables, setOutputVariables] = useState({
+  //   F102: [0.00],
+  // });
+  // const [outputUnits, setOutputUnits] = useState({
+  //   F102: 'L/hr',
+  // });
 
+  
+  const [outputVariables, setOutputVariables] = useState({ mRNA: [] });
+  const [outputUnits, setOutputUnits]         = useState({ mRNA: '' });
   // State for selected variables
   const [selectedInputVariable, setSelectedInputVariable] = useState(null);
   const [selectedMeasuredVariable, setSelectedMeasuredVariable] = useState(null);
@@ -104,7 +119,7 @@ function IVT() {
   };
 
   const outputUnitsMapping = {
-    F102: 'L/hr',
+    mRNA: 'µM',
   };
 
   // -----------------------------------
@@ -195,11 +210,12 @@ function IVT() {
       setMeasuredVariables(mappedVariables);
       setMeasuredUnits(mappedUnits);
 
-      // Generate F102
-      const F102Data = calculateF102(simData.time, inputs.Q, inputs.V);
-      setOutputVariables({
-        F102: F102Data,
-      });
+      // // Generate F102
+      // const F102Data = calculateF102(simData.time, inputs.Q, inputs.V);
+      // setOutputVariables({
+      //   F102: F102Data,
+      // });
+      setOutputVariables({ mRNA: mappedVariables.mRNA || [] });
       setOutputUnits(outputUnitsMapping);
 
       alert('IVT Simulation (single-unit) completed successfully!');
@@ -261,7 +277,7 @@ function IVT() {
       F102: [0.00],
     });
     setOutputUnits({
-      F102: 'L/hr',
+      mRNA: 'µM',
     });
     setTimeData([]);
   };
@@ -269,42 +285,40 @@ function IVT() {
   // -----------------------------------
   // 5. Handle Chain Mode (uniqueId from URL)
   // -----------------------------------
-  useEffect(() => {
-    const fetchChainSimulationData = async () => {
-      if (!uniqueId) {
-        setLoading(false);
-        return; // no chain mode
+useEffect(() => {
+  // Chain‐mode: only fetch if both runId and unitUniqueId are present
+  if (!unitUniqueId) {
+    setLoading(false);
+    return;
+  }
+
+  (async () => {
+    try {
+      const result = await getUnitResult(runId, unitUniqueId);
+      if (result) {
+        setSimulationResult(result);
+        setTimeData(result.time || []);
+
+        const { mappedVariables, mappedUnits } = mapVariableNames(result);
+        setMeasuredVariables(mappedVariables);
+        setMeasuredUnits(mappedUnits);
+
+        setOutputVariables({ mRNA: mappedVariables.mRNA || [] });
+        setOutputUnits(outputUnitsMapping);
+
+        setError(null);
+      } else {
+        setError('No simulation result found for this unit.');
       }
-      try {
-        const result = await getUnitResult(uniqueId);
-        if (result) {
-          setSimulationResult(result);
-          setTimeData(result.time || []);
-
-          const { mappedVariables, mappedUnits } = mapVariableNames(result);
-          setMeasuredVariables(mappedVariables);
-          setMeasuredUnits(mappedUnits);
-
-          const F102Data = calculateF102(result.time, inputs.Q, inputs.V);
-          setOutputVariables({
-            F102: F102Data,
-          });
-          setOutputUnits(outputUnitsMapping);
-
-          setError(null);
-        } else {
-          setError('No simulation result found for this unit.');
-        }
-      } catch (err) {
-        console.error('Error fetching simulation data:', err);
-        setError('Error fetching simulation data.');
-      }
+    } catch (err) {
+      console.error('Error fetching simulation data:', err);
+      setError('Error fetching simulation data.');
+    } finally {
       setLoading(false);
-    };
+    }
+  })();
+}, [runId, unitUniqueId, getUnitResult]);
 
-    fetchChainSimulationData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uniqueId]);
 
   // Function to handle Tag click
   const handleTagClick = (variable) => {
@@ -384,19 +398,17 @@ function IVT() {
   };
 
   return (
-    <div className="ivt-container">
-      <h1>IVT Unit</h1>
+    <div className={styles.ivtContainer}>
+      <h1 className={styles.heading}>IVT Unit</h1>
 
-      {/* Navigation Buttons */}
-      <div className="navigation-buttons">
+      <div className={styles.navigationButtons}>
         <button onClick={openMembrane}>Go to Membrane Unit</button>
         <button onClick={openCCTC}>Go to CCTC Unit</button>
         <button onClick={openLNP}>Go to LNP Unit</button>
         <button onClick={openLyo}>Go to Freeze-drying Unit</button>
       </div>
 
-      <div className="ivt-layout">
-        {/* Sidebar */}
+      <div className={styles.layout}>
         <Sidebar
           inputs={inputs}
           inputUnits={inputUnits}
@@ -405,9 +417,8 @@ function IVT() {
           selectedInputVariable={selectedInputVariable}
         />
 
-        <div className="ivt-main-content">
-          <div className="ivt-top-section">
-            {/* Measured Variables */}
+        <div className={styles.mainContent}>
+          <div className={styles.topSection}>
             <MeasuredVariables
               measuredVariables={measuredVariables}
               measuredUnits={measuredUnits}
@@ -415,12 +426,9 @@ function IVT() {
               selectedMeasuredVariable={selectedMeasuredVariable}
             />
 
-            <div className="ivt-figure-output">
-              {/* CSTR Figure */}
+            <div className={styles.ivtFigureOutput}>
               <CstrFigure />
-
-              {/* Output Variables */}
-              <OutputVariables
+              <UpdatedOutput
                 outputVariables={outputVariables}
                 outputUnits={outputUnits}
                 handleTagClick={handleTagClick}
@@ -429,7 +437,6 @@ function IVT() {
             </div>
           </div>
 
-          {/* Graphs */}
           <Graphs
             selectedInputVariable={selectedInputVariable}
             simulationResult={simulationResult}
@@ -444,8 +451,7 @@ function IVT() {
             inputUnits={inputUnits}
           />
 
-          {/* RunPlant button only if not in chain mode */}
-          {!uniqueId && (
+          {!isChainMode && (
             <RunPlant
               finalTime={finalTime}
               handleFinalTimeChange={handleFinalTimeChange}
@@ -455,8 +461,10 @@ function IVT() {
         </div>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
-      {uniqueId && loading && <div className="loading-message">Loading simulation data...</div>}
+      {error && <div className={styles.errorMessage}>{error}</div>}
+      {!isChainMode && loading && (
+        <div className={styles.loadingMessage}>Loading simulation data...</div>
+      )}
     </div>
   );
 }

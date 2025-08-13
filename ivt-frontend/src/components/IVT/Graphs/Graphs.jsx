@@ -1,10 +1,8 @@
-// src/components/Graphs/Graphs.jsx
-
 import React from 'react';
 import InputGraph from '../InputGraph/InputGraph';
 import MeasuredVariableGraph from '../MeasuredVariableGraph/MeasuredVariableGraph';
-import OutputVariableGraph from '../OutputVariableGraph/OutputVariableGraph';
-import './Graphs.css';
+import UpdatedOutputGraph from '../UpdatedOutputGraph/UpdatedOutputGraph';
+import styles from './Graphs.module.css';
 
 function Graphs({
   selectedInputVariable,
@@ -20,9 +18,9 @@ function Graphs({
   inputUnits,
 }) {
   return (
-    <div className="graphs">
+    <div className={styles.graphs}>
       {/* Input Variables Graph */}
-      <div className="graph-section">
+      <div className={styles.graphSection}>
         {selectedInputVariable && simulationResult && (
           <InputGraph
             inputName={selectedInputVariable.name}
@@ -38,7 +36,7 @@ function Graphs({
       </div>
 
       {/* Measured Variables Graph */}
-      <div className="graph-section">
+      <div className={styles.graphSection}>
         {selectedMeasuredVariable && simulationResult && (
           <MeasuredVariableGraph
             variableName={selectedMeasuredVariable.name}
@@ -49,14 +47,13 @@ function Graphs({
         )}
       </div>
 
-      {/* Output Variables Graph */}
-      <div className="graph-section">
-        {selectedOutputVariable && simulationResult && (
-          <OutputVariableGraph
-            variableName={selectedOutputVariable.name}
+      {/* Updated Output Variables Graph (mRNA only) */}
+      <div className={styles.graphSection}>
+        {simulationResult && (
+          <UpdatedOutputGraph
             timeData={timeData}
-            variableData={outputVariables[selectedOutputVariable.name]}
-            unit={outputUnits[selectedOutputVariable.name]}
+            outputVariables={outputVariables}
+            outputUnits={outputUnits}
           />
         )}
       </div>

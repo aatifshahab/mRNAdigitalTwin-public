@@ -86,9 +86,9 @@
 
 .graphContainer {
   top: 650px;
-  left: 250px;
+  left: 150px;
   width: 1660px; /* Adjust based on your layout */
-  height: 320px; /* Adjust based on your layout */
+  height: 300px; /* Adjust based on your layout */
 }
 
 .figureWrapper, .threeDPlaceholder {

@@ -11,10 +11,15 @@ import LyoInputs from './Inputs/LyoInputs';
 import LyoMeasured from './Measured/LyoMeasured';
 import LyoOutputs from './Outputs/LyoOutputs';
 import LyoGraphs from './Graphs/LyoGraphs';
+import LyoFigure from './Figure/LyoFigure';
 
 function Lyo() {
   const location = useLocation();
   const { getUnitResult, addChainResult } = useContext(SimulationContext);
+  const params        = new URLSearchParams(location.search);
+  const runId         = params.get('run_id');         // top‐level run UUID
+  const unitUniqueId  = params.get('unit_uniqueId');
+  const uniqueId = params.get('uniqueId');
 
   // -----------------------------------
   // 1. State Management
@@ -63,10 +68,9 @@ function Lyo() {
   // 2. Check for `uniqueId` => Chain Mode
   // -----------------------------------
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const uniqueId = params.get('uniqueId');
+    
 
-    if (!uniqueId) {
+    if ( !unitUniqueId) {
       // Standalone => no fetch
       setIsLoading(false);
       return;
@@ -75,9 +79,9 @@ function Lyo() {
     // Chain mode => fetch from backend
     (async () => {
       try {
-        const fetched = await getUnitResult(uniqueId);
+        const fetched = await getUnitResult(runId, unitUniqueId);
         if (!fetched) {
-          setError(`No Lyo result found for uniqueId=${uniqueId}`);
+          setError(`No Lyo result found for uniqueId=${unitUniqueId}`);
         } else {
           // The shape from main.py => { time1, time2, time3, time, massOfIce, ... }
           setLyoOutputs({
@@ -102,7 +106,7 @@ function Lyo() {
       }
       setIsLoading(false);
     })();
-  }, [location.search, getUnitResult]);
+  }, [runId, unitUniqueId, getUnitResult]);
 
   // -----------------------------------
   // 3. Handle Input Changes
@@ -227,8 +231,8 @@ function Lyo() {
   };
 
   // Check if chain mode
-  const params = new URLSearchParams(location.search);
-  const isChainMode = !!params.get('uniqueId');
+  // const isChainMode = !!params.get('uniqueId');
+  const isChainMode = !!unitUniqueId;
 
   return (
     <div className={styles.container}>
@@ -283,13 +287,9 @@ function Lyo() {
             />
           </div>
 
-          {/* Figure Placeholder */}
-          <div className={styles.figureContainer}>
-            <div className={styles.figureWrapper}>
-              <h3>Figure Placeholder</h3>
-              {/* Add your figure content here */}
-            </div>
-          </div>
+          {/* Lyo diagram */}
+
+          <LyoFigure/>  
 
           {/* Graphs */}
           <div className={styles.graphContainer}>

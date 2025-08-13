@@ -3,6 +3,7 @@
 import React from 'react';
 import styles from './LNPInputs.module.css';
 import LNPVariableTag from '../Tags/LNPVariableTag'; // Ensure the path is correct
+import { labelMapping } from '../../utilits/labelMapping';
 
 function LNPInputs({ inputs, handleInputChange }) {
   // Define input units
@@ -12,6 +13,8 @@ function LNPInputs({ inputs, handleInputChange }) {
     pH: '',
     Ion: 'M',
     TF: 'ml/min',
+    C_lipid: 'mg/ml', 
+    mRNA_in: 'mg/ml',
   };
 
   return (
@@ -19,7 +22,8 @@ function LNPInputs({ inputs, handleInputChange }) {
       <h2 className={styles.title}>Inputs</h2>
 
       {Object.keys(inputs).map((key) => {
-        const displayName = key.replace('_', ' '); // Alternatively, use a mapping if preferred
+        // const displayName = key.replace('_', ' '); 
+        const displayName = labelMapping[key] || key.replace(/_/g, ' ');
         const unit = inputUnits[key] || '';
 
         return (
@@ -27,8 +31,8 @@ function LNPInputs({ inputs, handleInputChange }) {
             {/* Variable Tag */}
             <LNPVariableTag
               name={displayName}
-              isSelected={false} // Set to true if you implement selection
-              onTagClick={() => {}} // Implement if needed
+              isSelected={false} 
+              onTagClick={() => {}}
             />
 
             {/* Input Field with Unit */}

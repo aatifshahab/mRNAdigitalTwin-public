@@ -55,7 +55,7 @@ function MembraneConcentration({
 
   return (
     <div className={styles.concentrationPanel}>
-      <h2 className={styles.header}>Concentration Step (PDE)</h2>
+      <h2 className={styles.header}>Concentration Step</h2>
 
       <div className={styles.speciesRow}>
         {/* mRNA */}

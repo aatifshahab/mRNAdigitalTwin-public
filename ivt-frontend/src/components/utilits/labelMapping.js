@@ -36,5 +36,14 @@ export const labelMapping = {
     //Membrane outputs 
     Jcrit: 'Critical Flux',
     Xactual: 'Actual Conversion',
+
+    // LNP inputs
+    Residential_time: 'Residence time',
+    FRR:              'Flow rate ratio',
+    pH:               'pH',
+    Ion:              'Ionic strength',
+    TF:               'Total flow rate',
+    C_lipid:          'Lipid In.',
+    mRNA_in:          'mRNA In',
   };
   

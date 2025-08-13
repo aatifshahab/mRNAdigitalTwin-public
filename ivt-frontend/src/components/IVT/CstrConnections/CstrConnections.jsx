@@ -1,12 +1,11 @@
-// src/components/CstrConnections.jsx
+// src/components/CstrConnections/CstrConnections.jsx
 
 import React from 'react';
-import './CstrConnections.css'; // Optional: For additional styling
+import styles from './CstrConnections.module.css';
 
 function CstrConnections() {
   return (
-    <svg className="cstr-connections" xmlns="http://www.w3.org/2000/svg">
-      {/* Input Line with Arrow */}
+    <svg className={styles.connections} xmlns="http://www.w3.org/2000/svg">
       <defs>
         <marker
           id="arrowhead"
@@ -15,40 +14,36 @@ function CstrConnections() {
           refX="10"
           refY="3.5"
           orient="auto"
-          
         >
           <polygon points="0 0, 12 3.5, 0 7" fill="grey" />
         </marker>
       </defs>
 
-      {/* Line from Input Box to CSTR */}
       <line
-        x1="-550"    // Starting x-coordinate (adjust as needed)
-        y1="50"    // Starting y-coordinate (adjust as needed)
-        x2="10"   // Ending x-coordinate at CSTR (adjust as needed)
-        y2="50"    // Ending y-coordinate at CSTR (adjust as needed)
+        x1="-550"
+        y1="50"
+        x2="10"
+        y2="50"
         stroke="grey"
         strokeWidth="3"
         markerEnd="url(#arrowhead)"
       />
 
-      {/* Line from CSTR to Output Box */}
       <line
-        x1="200"   // Starting x-coordinate at CSTR (adjust as needed)
-        y1="170"   // Starting y-coordinate at CSTR (adjust as needed)
-        x2="545"   // Ending x-coordinate at Output Box (adjust as needed)
-        y2="170"   // Ending y-coordinate at Output Box (adjust as needed)
+        x1="200"
+        y1="170"
+        x2="545"
+        y2="170"
         stroke="grey"
         strokeWidth="3"
         markerEnd="url(#arrowhead)"
       />
 
-      {/* Line from CSTR to Measured Variable Box (No Arrow) */}
       <line
-        x1="130"   // Starting x-coordinate inside CSTR (adjust as needed)
-        y1="45"    // Starting y-coordinate inside CSTR (adjust as needed)
-        x2="130"     // Ending x-coordinate at Measured Variable Box (adjust as needed)
-        y2="-25"    // Ending y-coordinate at Measured Variable Box (adjust as needed)
+        x1="130"
+        y1="45"
+        x2="130"
+        y2="-25"
         stroke="grey"
         strokeWidth="5"
       />

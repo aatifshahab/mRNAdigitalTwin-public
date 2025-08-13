@@ -132,10 +132,20 @@ class LNPInput(BaseModel):
         ...,
         description="Total flowrate [ml/min]"
     )
+    mRNA_in: float = Field(
+        ...,
+        description="MRNA concnetration in from previous unit [mg/ml]"
+    )
+    C_lipid: float = Field(
+        ...,
+        description="lipic cncnetration [mg/ml]"
+    )
 
 class LNPOutput(BaseModel):
-    Diameter: List[List[float]] 
-    PSD: List[List[float]]      
+    Diameter: List[List[float]]  # Particle diameters (2D array)
+    PSD: List[List[float]]       # Particle size distribution (2D array)
+    EE: float                    # Encapsulation efficiency (dimensionless)
+    mRNA_out: float              # mRNA concentration after processing
     error: Optional[str] = None  
 
 
