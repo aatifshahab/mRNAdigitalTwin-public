@@ -1,16 +1,39 @@
 using Pkg
-Pkg.activate("../IVTmodel")
-Pkg.instantiate()
-include("../IVTmodel.jl")
+# Pkg.activate("../IVTmodel")
+# Pkg.instantiate()
+# include("../IVTmodel.jl")
 
+
+# Activate IVT2.0/IVTmodel RELATIVE to this file (portable)
+Pkg.activate(normpath(joinpath(@__DIR__, "..", "..", "IVTmodel")))
+Pkg.instantiate()
+
+# Include the model file RELATIVE to this file
+include(normpath(joinpath(@__DIR__, "..", "IVTmodel.jl")))
+
+# Optional: print once for sanity during dev
+# @info "Active Julia project" Base.active_project()
+
+using CSV, DataFrames
+
+# Project root and outputs dir RELATIVE to this file
+const ROOT   = normpath(joinpath(@__DIR__, "..", ".."))
+const OUTDIR = joinpath(ROOT, "outputs")
+
+# Portable CSV loads (no machine-specific absolute paths)
+akamafittedparametersmatrix = Matrix(CSV.read(joinpath(OUTDIR, "fittedparameters.csv"),
+                                             DataFrame; header=false))
+fittedparamslist = reshape(akamafittedparametersmatrix, (size(akamafittedparametersmatrix, 1),))
+covariancemat = Matrix(CSV.read(joinpath(OUTDIR, "covariancematrix.csv"),
+                                DataFrame; header=false))
 
 #Generates settings for parameters used
 fittingmodel = setupmodel_IVT4()
 
 
-akamafittedparametersmatrix = Matrix(CSV.read("C:/Users/moha0095/ivt-app/IVT2.0/outputs/fittedparameters.csv", DataFrame,header=false))
-fittedparamslist = reshape(akamafittedparametersmatrix,(size(akamafittedparametersmatrix)[1],))
-covariancemat = Matrix(CSV.read("C:/Users/moha0095/ivt-app/IVT2.0/outputs/covariancematrix.csv", DataFrame,header=false))
+# akamafittedparametersmatrix = Matrix(CSV.read("C:/Users/User/mRNAdigitalTwin/IVT2.0/outputs/fittedparameters.csv", DataFrame,header=false))
+# fittedparamslist = reshape(akamafittedparametersmatrix,(size(akamafittedparametersmatrix)[1],))
+# covariancemat = Matrix(CSV.read("C:/Users/User/mRNAdigitalTwin/IVT2.0/outputs/covariancematrix.csv", DataFrame,header=false))
 fittedparams = fullparameterset(fittingmodel,fittedparamslist)
 alpha = 0.05
 

@@ -12,7 +12,7 @@ def get_matlab_engine():
         try:
             eng = matlab.engine.start_matlab()
             # Navigate to the backend directory
-            backend_dir = r'C:\Users\moha0095\mRNAdigitalTwin\backend'  # Update this path as needed
+            backend_dir = r'C:\Users\User\mRNAdigitalTwin\backend'  # Update this path as needed
             eng.cd(backend_dir, nargout=0)
 
             # Add the Lyo folder to MATLAB's path

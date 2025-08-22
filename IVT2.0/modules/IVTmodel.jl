@@ -1,9 +1,9 @@
 using Distributed
 using DifferentialEquations
-using Plots
+# using Plots
 using NLopt
 using LinearAlgebra
-using Metrics
+
 using CSV, DataFrames
 using StaticArrays
 using ForwardDiff
@@ -16,7 +16,7 @@ using GenericLinearAlgebra
 using DiffResults
 using FLoops
 using SharedArrays
-using Plots.PlotMeasures
+# using Plots.PlotMeasures
 using FlexiMaps
 using LaTeXStrings
 using DelimitedFiles
@@ -26,4 +26,4 @@ using BenchmarkTools
 
 include("models/models.jl")
 include("tools/tools.jl")
-include("visualization/visualization.jl")
+# include("visualization/visualization.jl")

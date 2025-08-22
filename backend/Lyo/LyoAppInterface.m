@@ -5,14 +5,14 @@ TempShelfprimaryDrying, TempShelfsecondaryDrying, Pressure)
 
 % Need to change this based on the location
 % Add paths using full paths
-addpath('C:\Users\moha0095\mRNAdigitalTwin\backend\Lyo\Input Data');
-addpath('C:\Users\moha0095\mRNAdigitalTwin\backend\Lyo\Model Equations');
-addpath('C:\Users\moha0095\mRNAdigitalTwin\backend\Lyo\Events');
-addpath('C:\Users\moha0095\mRNAdigitalTwin\backend\Lyo\Exporting Graphics');
-addpath('C:\Users\moha0095\mRNAdigitalTwin\backend\Lyo\Plotting');
-addpath('C:\Users\moha0095\mRNAdigitalTwin\backend\Lyo\Validation Data');
-addpath('C:\Users\moha0095\mRNAdigitalTwin\backend\Lyo\Simulations');
-addpath('C:\Users\moha0095\mRNAdigitalTwin\backend\Lyo\Calculations');
+addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Input Data');
+addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Model Equations');
+addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Events');
+addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Exporting Graphics');
+addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Plotting');
+addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Validation Data');
+addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Simulations');
+addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Calculations');
 
 
 %% Pre-simulation

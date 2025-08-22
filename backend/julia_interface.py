@@ -1,6 +1,7 @@
 from julia import Main, Julia
 import logging
 from schemas import IVTInput
+from pathlib import Path 
 
 
 
@@ -11,7 +12,10 @@ jl = Julia(compiled_modules=False)
 logging.basicConfig(level=logging.INFO)
 
 # Include the Julia module containing IVT_CSTR
-Main.include("C:/Users/moha0095/ivt-appNew/IVT2.0/modules/API/reactorAPI.jl")
+#Main.include("C:/Users/User/mRNAdigitalTwin/IVT2.0/modules/API/reactorAPI.jl")
+ROOT = Path(__file__).resolve().parents[1]  # .../mRNAdigitalTwin
+API_FILE = ROOT / "IVT2.0" / "modules" / "API" / "reactorAPI.jl"
+Main.include(API_FILE.as_posix()) 
 
 def run_ivt_process(input_data: IVTInput):
     try:

@@ -1,0 +1,21 @@
+# Python envs
+backend/.venv310/
+.venv*/
+venv*/
+env*/
+__pycache__/
+.ipynb_checkpoints/
+
+# Editors/IDE
+.vs/
+.vscode/
+.idea/
+
+# Builds (if any)
+node_modules/
+dist/
+build/
+
+# Misc
+*.log
+*.bak
