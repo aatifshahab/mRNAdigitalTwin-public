@@ -5,14 +5,39 @@ TempShelfprimaryDrying, TempShelfsecondaryDrying, Pressure)
 
 % Need to change this based on the location
 % Add paths using full paths
-addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Input Data');
-addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Model Equations');
-addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Events');
-addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Exporting Graphics');
-addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Plotting');
-addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Validation Data');
-addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Simulations');
-addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Calculations');
+%addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Input Data');
+%addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Model Equations');
+%addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Events');
+%addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Exporting Graphics');
+%addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Plotting');
+%addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Validation Data');
+%addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Simulations');
+%addpath('C:\Users\User\mRNAdigitalTwin\backend\Lyo\Calculations');
+
+% dynamic path
+thisFile = mfilename('fullpath');     % full path to LyoAppInterface.m
+lyoDir   = fileparts(thisFile);       % .../backend/Lyo
+
+subdirs = { ...
+    'Input Data', ...
+    'Model Equations', ...
+    'Events', ...
+    'Exporting Graphics', ...
+    'Plotting', ...
+    'Validation Data', ...
+    'Simulations', ...
+    'Calculations' ...
+};
+
+for k = 1:numel(subdirs)
+    p = fullfile(lyoDir, subdirs{k});
+    if isfolder(p)
+        addpath(p);
+    else
+        warning('LyoAppInterface:MissingFolder','Missing folder: %s', p);
+    end
+end
+
 
 
 %% Pre-simulation

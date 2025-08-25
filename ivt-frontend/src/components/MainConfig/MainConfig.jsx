@@ -98,7 +98,7 @@ function MainConfig() {
           pH: 5.5,
           Ion: 0.1,
           TF: 0.0,
-          C_lipid: 10.0, 
+          C_lipid: 10.0,
           mRNA_in: 10.0,
         };
       case 'lyo':
@@ -127,8 +127,8 @@ function MainConfig() {
   const openOrFocusWindow = (unit) => {
     // const url = `${window.location.origin}/${unit.id}?uniqueId=${unit.uniqueId}`;
     const url =
-    `${window.location.origin}/${unit.id}` +
-    `?unit_uniqueId=${unit.uniqueId}`;
+      `${window.location.origin}/${unit.id}` +
+      `?unit_uniqueId=${unit.uniqueId}`;
     const windowFeatures = 'width=800,height=600';
 
     // Always open in a new tab/window
@@ -179,8 +179,6 @@ function MainConfig() {
 
       // **Set simulationCompleted to true** after successful run
       setSimulationCompleted(true);
-
-      
     } catch (error) {
       console.error('Error running chain:', error);
       setError('An error occurred while running the plant simulation.');
@@ -193,15 +191,20 @@ function MainConfig() {
   // Edit unit
   const editUnit = (unit) => {
     setUnitBeingEdited(unit.uniqueId);
-    setEditedInputs(unit.inputs);
+    // 🔧 CHANGED: store as strings so user can type decimals/partials freely
+    const asStrings = Object.fromEntries(
+      Object.entries(unit.inputs).map(([k, v]) => [k, v === undefined ? '' : String(v)])
+    );
+    setEditedInputs(asStrings);
   };
 
   // Input changes in edit form
   const handleEditInputChange = (e, name) => {
     const value = e.target.value;
+    // 🔧 CHANGED: keep raw string while typing (no parse here)
     setEditedInputs((prev) => ({
       ...prev,
-      [name]: isNaN(parseFloat(value)) ? value : parseFloat(value),
+      [name]: value,
     }));
   };
 
@@ -213,9 +216,25 @@ function MainConfig() {
       return;
     }
 
+    // 🔧 CHANGED: convert back to numbers ONLY for fields that were numbers originally
+    const coerced = Object.fromEntries(
+      Object.entries(editedInputs).map(([k, v]) => {
+        const wasNumber = typeof unit.inputs[k] === 'number';
+        if (!wasNumber) return [k, v]; // keep strings (e.g., filterType)
+
+        const cleaned = String(v).replace(/,/g, '').trim();
+        if (cleaned === '') {
+          // keep previous numeric if empty
+          return [k, unit.inputs[k]];
+        }
+        const num = Number(cleaned);
+        return Number.isFinite(num) ? [k, num] : [k, unit.inputs[k]];
+      })
+    );
+
     const updatedFlow = processFlow.map((u) => {
       if (u.uniqueId === unitBeingEdited) {
-        return { ...u, inputs: editedInputs };
+        return { ...u, inputs: coerced };
       }
       return u;
     });
@@ -230,6 +249,12 @@ function MainConfig() {
     setUnitBeingEdited(null);
     setEditedInputs({});
   };
+
+  // Helper to get current unit + check numeric fields in render
+  const currentUnit = unitBeingEdited
+    ? processFlow.find((u) => u.uniqueId === unitBeingEdited)
+    : null;
+  const originalInputs = currentUnit ? currentUnit.inputs : {};
 
   return (
     <div className={styles.mainConfigContainer}>
@@ -298,18 +323,23 @@ function MainConfig() {
               {processFlow.find((u) => u.uniqueId === unitBeingEdited).instance}
             </h3>
             <form className={styles.editForm}>
-              {Object.keys(editedInputs).map((key) => (
-                <div key={key} className={styles.formGroup}>
-                  <label htmlFor={key}>{key}:</label>
-                  <input
-                    type="text"
-                    id={key}
-                    name={key}
-                    value={editedInputs[key]}
-                    onChange={(e) => handleEditInputChange(e, key)}
-                  />
-                </div>
-              ))}
+              {Object.keys(editedInputs).map((key) => {
+                const wasNumber = typeof originalInputs[key] === 'number';
+                return (
+                  <div key={key} className={styles.formGroup}>
+                    <label htmlFor={key}>{key}:</label>
+                    <input
+                      type="text"                   // 🔧 keep text to allow partials like "0.", "-.5"
+                      id={key}
+                      name={key}
+                      value={editedInputs[key] ?? ''}
+                      onChange={(e) => handleEditInputChange(e, key)}
+                      // Hint numeric keypad on mobile for numeric fields
+                      {...(wasNumber ? { inputMode: 'decimal', placeholder: 'Enter a number' } : {})}
+                    />
+                  </div>
+                );
+              })}
             </form>
             <div className={styles.modalButtons}>
               <button onClick={saveEditedInputs} className={styles.saveButton}>

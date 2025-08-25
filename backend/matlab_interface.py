@@ -2,36 +2,50 @@ import matlab.engine
 import numpy as np
 import logging
 import os
+from pathlib import Path
 
-# Initialize the MATLAB engine at module load time
+
+
+from pathlib import Path
+import logging
+import matlab.engine
+
 eng = None
+
+def _find_backend_dir() -> Path:
+   
+    here = Path(__file__).resolve()
+    # If this file lives inside backend/, use that folder
+    if here.parent.name.lower() == "backend":
+        return here.parent
+    # Otherwise, search upward for a folder literally named 'backend'
+    for p in here.parents:
+        if p.name.lower() == "backend":
+            return p
+        cand = p / "backend"
+        if cand.is_dir():
+            return cand
+    # Fallback: current working directory
+    return Path.cwd()
 
 def get_matlab_engine():
     global eng
     if eng is None:
         try:
             eng = matlab.engine.start_matlab()
-            # Navigate to the backend directory
-            backend_dir = r'C:\Users\User\mRNAdigitalTwin\backend'  # Update this path as needed
-            eng.cd(backend_dir, nargout=0)
 
-            # Add the Lyo folder to MATLAB's path
-            cctc_folder = os.path.join(backend_dir, 'cctc')
-            eng.addpath(cctc_folder, nargout=0)
+            backend_dir = _find_backend_dir()
+            eng.cd(str(backend_dir), nargout=0)
 
-            # Add the Lyo folder to MATLAB's path
-            lyo_folder = os.path.join(backend_dir, 'Lyo')
-            eng.addpath(lyo_folder, nargout=0)
+            # Add MATLAB paths (recursively) for required modules
+            for sub in ("cctc", "Lyo", "membrane", "LNP"):
+                folder = backend_dir / sub
+                if folder.is_dir():
+                    eng.addpath(eng.genpath(str(folder)), nargout=0)
+                else:
+                    logging.warning(f"[MATLAB] Missing folder: {folder}")
 
-            # Add the membrane folder to MATLAB's path
-            membrane_folder = os.path.join(backend_dir, 'membrane')
-            eng.addpath(membrane_folder, nargout=0)
-
-            # Add the LNP folder to MATLAB's path
-            lnp_folder = os.path.join(backend_dir, 'LNP')
-            eng.addpath(lnp_folder, nargout=0)
-
-            logging.info(f"MATLAB engine started. Path set to: {lyo_folder}, {cctc_folder}, {membrane_folder}, and {lnp_folder}")
+            logging.info(f"[MATLAB] Engine started. Backend: {backend_dir}")
         except Exception as e:
             logging.error(f"Failed to start MATLAB engine: {e}")
             raise RuntimeError(f"Failed to start MATLAB engine: {e}")
