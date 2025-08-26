@@ -1,0 +1,24 @@
+/* src/components/IVT/UpdatedOutput/UpdatedOutput.module.css */
+
+.container {
+  width: 200px;
+  height: 150px;
+  margin-top: 80px;
+  margin-left: 40px;
+  background-color: #e0e0e0;
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.title {
+  text-align: center;
+  color: #333333;
+  margin-bottom: 8px;
+}
+
+.variablesBox {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}

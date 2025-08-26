@@ -1,0 +1,20 @@
+/* src/components/RunPlantButton.css */
+
+.run-plant-button {
+  padding: 10px 20px;
+  margin-top: 10px;
+  
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #929292; /* Grey background */
+  color: #ffffff; /* White text */
+  border: none;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+  color: black;
+  font-weight: bold;
+}
+
+.run-plant-button:hover {
+  background-color: #757575; /* Darker grey on hover */
+}

@@ -1,0 +1,35 @@
+/* src/components/Membrane/MembraneRun/MembraneRun.module.css */
+.runContainer {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  color: #333;
+  font-weight: bold;
+}
+
+.inputField {
+  width: 80px;
+  padding: 5px;
+  font-size: 16px;
+  border-radius: 4px;
+}
+
+.runButton {
+  padding: 5px 10px;
+  background-color: #333;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  font-size: 16px;
+}
+
+.runButton:hover {
+  background-color: #575757;
+}

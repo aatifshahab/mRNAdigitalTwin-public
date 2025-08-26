@@ -1,0 +1,52 @@
+/* src/components/CCTC/CCTCInputs/CCTCInputs.css */
+
+.cctc-inputs {
+  background-color: #d3d3d3; /* Gray background */
+  padding: 15px;
+  border-radius: 5px;
+  border: 1px solid #a0a0a0; /* Medium grey border */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  top:140px;
+  left:38px;
+}
+
+.cctc-inputs h2 {
+  text-align: center;
+  color: #333333;
+  margin-bottom: 15px;
+}
+
+.cctc-input-item {
+  display: flex;
+  align-items: center; /* Align the tag and input field vertically */
+  gap: 5px; /* Add space between tag and input field */
+}
+
+.cctc-input-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.cctc-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 5px; /* Adjust space between input field and unit as needed */
+}
+
+.cctc-input-field {
+  padding: 8px;
+  border: 1px solid #a0a0a0;
+  border-radius: 5px;
+  font-size: 16px;
+  width: 80px; /* Set the same width as tags */
+  height: 20px; /* Set the same height as tags */
+}
+
+
+.cctc-input-unit {
+  font-size: 18px;
+  color: #333333;
+  white-space: nowrap;
+}

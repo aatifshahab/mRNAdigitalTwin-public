@@ -1,0 +1,27 @@
+/* src/components/MeasuredVariables/MeasuredVariables.module.css */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 1200px;
+  background-color: hsla(60, 2%, 88%, 0.884);
+  padding: 5px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-left: 490px;
+  margin-top: 30px;
+  justify-content: center;
+}
+
+.title {
+  color: #333333;
+  margin-bottom: 0;
+  text-align: center;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}

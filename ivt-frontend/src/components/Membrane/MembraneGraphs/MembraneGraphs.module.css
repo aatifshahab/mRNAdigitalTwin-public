@@ -1,0 +1,49 @@
+/* src/components/Membrane/MembraneGraphs/MembraneGraphs.module.css */
+
+
+.graphs {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+
+  margin-left: 400px;
+  margin-top: -180px;
+
+}
+
+/* Each graph panel box */
+.graphSection {
+  min-width: 450px;
+  max-width: 450px;
+  height: 330px; /* The total panel height */
+
+  background-color: rgb(230, 230, 230);
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0px solid #a0a0a0;
+  
+  display: flex;
+  flex-direction: column; 
+  /* We'll place a title (h3) at the top, then
+     a .graphContent area that grows below */
+  align-items: stretch;  /* or center if you prefer */
+}
+
+/* The title spacing */
+.graphSection h3 {
+  margin: 5px 0;
+  color: #333;
+  flex-shrink: 0; /* so the title doesn't shrink */
+}
+
+/* The container that holds the chart, 
+   filling all leftover space in the .graphSection after the h3 */
+.graphContent {
+  flex: 1;        /* let this child grow vertically to fill leftover height */
+  margin-top: 5px; /* small gap above chart */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch; 
+  /* no specific background needed, but you could add one to debug if you like */
+}

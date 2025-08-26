@@ -1,0 +1,7 @@
+include("akamaplotting.jl")
+include("fedbatchplotting.jl")
+include("guoplotting.jl")
+include("customdataplotting.jl")
+include("immobilizationplotting.jl")
+include("pheffectplotting.jl")
+include("solubilityplotting.jl")

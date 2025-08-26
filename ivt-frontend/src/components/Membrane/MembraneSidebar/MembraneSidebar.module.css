@@ -1,0 +1,58 @@
+
+/* src/components/Membrane/MembraneSidebar/MembraneSidebar.module.css */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 310px;
+  height: 700px;
+  background-color: hsla(60, 2%, 88%, 0.884);
+  padding: 10px;
+  position: absolute;
+  left: 50px;
+  top: 100px;
+}
+
+.title {
+  text-align: center;
+  color: #333;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.inputItem {
+  display: flex;
+  flex-direction: row;
+  
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.inputWithUnit {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+}
+
+.numberInput {
+  width: 70px;
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #aaa;
+}
+
+.unitLabel {
+  font-size: 14px;
+  color: #333;
+}
+
+.inputField {
+  width: 100px;
+
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #aaa;
+}

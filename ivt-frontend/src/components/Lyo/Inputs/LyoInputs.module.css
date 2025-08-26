@@ -1,0 +1,88 @@
+/* src/components/Lyo/Inputs/LyoInputs.module.css */
+
+.inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  /* Removed absolute positioning here as it's handled by the container */
+}
+
+.header {
+  text-align: center;
+  color: #333333;
+  margin-bottom: 15px;
+}
+
+/* Input Sections */
+.inputSection {
+  display: flex;
+  flex-direction: row; /* Labels and inputs side by side */
+  align-items: center; /* Vertically center items */
+  gap: 15px; /* Space between sections */
+  margin-bottom: 10px;
+}
+
+/* Input Groups */
+.inputGroup {
+  display: flex;
+  flex-direction: row; /* Align inputs horizontally */
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+}
+
+/* Single Input */
+.singleInput {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Input Items */
+.inputItem {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: flex-start; /* Center align labels and inputs */
+}
+
+.label {
+  font-size: 14px;
+  color: #333333;
+  max-width: 100px; /* Consistent label width */
+  max-height: 35px;
+}
+
+.input {
+  padding: 8px 5px;
+  border: 1px solid #808080;
+  border-radius: 4px;
+  font-size: 18px;
+  width: 60px; /* Smaller width for inputs */
+}
+
+.inputWithUnit {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px; /* Space between input and unit */
+}
+
+.unit {
+  font-size: 18px;
+  color: #555555;
+  margin-left: 5px; /* Space between input and unit */
+
+ 
+}
+
+/* Single Input Adjustments */
+.singleInput .input {
+  width: 100px; /* Wider for single inputs */
+}
+
+.singleInput .unit {
+  width: 60px;
+  text-align: left;
+}

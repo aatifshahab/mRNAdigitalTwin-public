@@ -1,0 +1,11 @@
+/* src/components/CCTC/CCTCGraphs/CCTCGraph.css */
+
+.cctc-graph {
+  width: 100%;
+  height: 100%;
+  background-color: hsl(0, 0%, 93%); /* Gray background to match IVT */
+  border-radius: 5px;
+  padding: 10px;
+  box-sizing: border-box;
+  border: 1px solid #a0a0a0; /* Medium gray border */
+}

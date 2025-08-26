@@ -1,0 +1,7 @@
+environment named matlab_env
+if creating new environment ensure pyhton is 310
+matlab ngine and Julia ins installed in the environment
+uvicorn
+fastapi
+numpy
+conda activate matlab_env

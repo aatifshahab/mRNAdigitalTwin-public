@@ -1,0 +1,122 @@
+function outputs = overwrite_inputdata(ip2,data)
+
+ip = ip2;
+
+switch data
+case 'expcon1_freezing'
+ip.freezing = "suspended"; 
+ip.d = 0.024; 
+ip.Vl = 3e-6;  
+ip.hs1 = 7;  
+ip.hs3 = 15; 
+ip.hs2 = 18;  
+ip.T01 = 280; 
+ip.Tf = 273.15; 
+ip.Tnuc = 263.18; 
+ip.tpre1 = 2*3600;  
+ip.Tg = load('Data_Con_FreezeGas').Data;  
+ip.Tc1 = 272;
+ip.Ta1 = 272;
+ip.xi = 0.95; 
+ip.tini1 = 0;
+ip.tpost1 = 5.53150681*3600;  
+ip.F1 = .78;
+
+case 'expcon1_primdry'
+ip.d = 0.024;  % 10R vial
+ip.dHsub = 2.84e6;  
+ip.hb2 = 16; 
+ip.T02 = 228;  
+ip.S0 = 0; 
+ip.Tc2 = 275;
+ip.Ta2 = ip.Tc2; 
+ip.Tb2 = @(x) min(263+(1/60)*x,263);
+ip.PwT = @(x) exp(-6139.9/x + 28.8912); 
+ip.Pwc = 3; 
+ip.Rp0 = 1.5e4; 
+ip.Rp1 = 3.4e7;
+ip.Rp2 = 1e0;  
+ip.tpost2 = 1*3600; 
+ip.F2 = .78;
+ip.ftop2 = 1;
+
+
+case 'expcon1_secdry'
+ip.d = 0.024; 
+ip.Vl = 2e-6; 
+ip.hb3 = 16;
+ip.T03 = 273; 
+ip.Ta3 = 285; 
+ip.Tb3 = 293;
+ip.Tc3 = 285;
+ip.cw0 = 0.088;  
+ip.cw0_min = 0.0314;  
+ip.cw0_max = 0.6415; 
+ip.cfin = .01; 
+ip.Ea = 20500; 
+ip.fa = 4.2e-1;  
+ip.R = 8.314;  
+ip.dHdes = 2.68e6;  
+ip.F3 = .78;
+ip.ftop3 = 1;
+
+case 'expbatch1_primdry'
+ip.rhof = 917;
+ip.Cpf = 1967.8;
+ip.kf = 2.30; 
+ip.alpf = ip.kf/(ip.Cpf*ip.rhof);
+ip.d = 7.125*2e-3;  % 2R vial 
+ip.H2 = 0.00715;
+ip.dHsub = 2.84e6; 
+ip.hb2 = 22; 
+ip.T02 = 228.15;  
+ip.Ta2 = 298.15; 
+ip.S0 = 0;
+ip.Tc2 = 250;
+ip.Tb2 = @(x) min(228.15+(.25/60)*x,258.15);
+ip.PwT = @(x) exp(-6139.9/x + 28.8912); 
+ip.Pwc = 15;
+ip.Rp0 = 3.8e4;
+ip.Rp1 = 3.1e7; 
+ip.Rp2 = 1e1;
+ip.F2 = 0;
+ip.ftop2 = 0;
+ip.rhoe = 252; 
+
+case 'expbatch2_secdry'
+ip.Vl = 1.5e-6; 
+ip.d = 7.125*2e-3; 
+ip.hb3 = 7;
+ip.T03 = 264.09;
+ip.Ta3 = 290;
+ip.cw0 = 0.0603;
+ip.cw0_min = 0.0314;
+ip.cw0_max = 0.6415;
+ip.cfin = 6e-3;
+ip.Ea = 5920; 
+ip.fa = 1.2e-3;
+ip.R = 8.314; 
+ip.dHdes = 2.68e6;  
+ip.Tb3 = @(x) min(264.09+(.5/60)*x,312);
+ip.Tc3 = 290;
+ip.F3 = 0;
+ip.ftop3 = 0; 
+
+case 'stochastic_freezing'
+ip.freezing = "stochastic";
+ip.T01 = 280;
+ip.Tg = 260;
+ip.dt1 = 10;
+ip.hs2 = 60;
+ip.hs3 = 60;
+ip.tpost1 = 1*3600;
+ip.F1 = 0;
+ip.Tc1 = ip.Tg;
+ip.Ta1 = ip.Tg;
+ip.bn = 1e-9;
+ip.kn = 12;
+end
+
+outputs = ip;
+
+return

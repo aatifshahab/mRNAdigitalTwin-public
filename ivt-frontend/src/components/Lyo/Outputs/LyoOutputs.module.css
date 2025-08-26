@@ -1,0 +1,37 @@
+/* src/components/Lyo/Outputs/LyoOutputs.module.css */
+
+.outputs {
+  background-color: #e0e0e0;
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  top: -50px;
+
+}
+
+.header {
+  text-align: center;
+  color: #333333;
+  margin-bottom: 15px;
+}
+
+.outputTags {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Tag Container */
+.tagContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+/* Output Value */
+.value {
+  margin-left: 10px;
+  font-size: 14px;
+  color: #555555;
+}

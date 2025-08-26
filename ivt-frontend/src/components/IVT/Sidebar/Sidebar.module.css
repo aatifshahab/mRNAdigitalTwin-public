@@ -1,0 +1,27 @@
+/*
+// src/components/IVT/Sidebar/Sidebar.module.css */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 240px;
+  height: 810px;
+  background-color: hsla(60, 2%, 88%, 0.884);
+  padding: 10px;
+  position: absolute;
+  left: 130px;
+  top: 70px;
+}
+
+.title {
+  text-align: center;
+  color: #333333;
+  margin-bottom: 10px;
+}
+
+.inputVariables {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

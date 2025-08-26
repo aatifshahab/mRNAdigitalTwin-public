@@ -1,0 +1,57 @@
+
+/* src/components/Membrane/MembraneConcentration/MembraneConcentration.module.css */
+
+.concentrationPanel {
+  background-color: hsla(60, 2%, 88%, 0.884);  
+  padding: 10px;
+  width: 490px;
+  border-radius: 5px;
+ 
+  margin-bottom: 10px;
+  margin-left: 450px;
+}
+
+.header {
+  margin: 0 0 10px;
+  color: #333;
+  text-align: center;
+  font-weight: bold;
+}
+
+.speciesRow {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.speciesBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.valueLabel {
+  font-size: 14px;
+  color: #333;
+  font-weight: normal;
+}
+
+.plotTypeRow {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  font-weight: bold;
+}
+
+.plotSelect {
+  padding: 5px;
+  border-radius: 4px;
+}

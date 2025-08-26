@@ -1,0 +1,45 @@
+/* src/components/Lyo/Graphs/LyoGraphs.module.css */
+
+.graphs {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+ 
+}
+
+.graphsContainer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 15px;
+  height: 100%;
+  width: 100%;
+ 
+}
+
+.graphSection {
+  flex: 1;
+  min-width: 0; /* Prevents overflow */
+  height: 100%;
+  background-color: lightgray; /* Light gray background */
+  padding: 0px;
+  border-radius: 5px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.threeDPlaceholder {
+  width: 100%;
+  height: 100%;
+  background-color: hsl(0, 0%, 93%);
+  border: 1px solid #a0a0a0;
+  border-radius: 5px;
+  padding: 15px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}

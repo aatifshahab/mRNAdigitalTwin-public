@@ -1,0 +1,375 @@
+/* src/components/MainConfig/MainConfig.module.css */
+
+/* Root Container */
+.mainConfigContainer {
+  padding: 40px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f0f0; /* Changed to light gray */
+  min-height: 100vh; /* Ensures background covers entire viewport */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Main Title */
+h1 {
+  text-align: center;
+  margin-bottom: 40px;
+  color: #333;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+/* Section Titles */
+.availableUnitsSection,
+.currentFlowSection {
+  width: 100%;
+  max-width: 1200px;
+  margin-bottom: 40px;
+}
+
+.availableUnitsSection h2,
+.currentFlowSection h2 {
+  margin-bottom: 20px;
+  color: #555;
+  font-size: 1.8rem;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+/* Units Rows */
+.availableUnitsRow,
+.currentFlowRow {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Unit Buttons */
+.availableUnitButton,
+.flowItemButton,
+.editButton,
+.removeButton {
+  padding: 12px 20px;
+  font-size: 20px;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  outline: none; /* Remove default outline */
+}
+
+/* Specific Button Styles */
+
+/* Light Blue Theme for Buttons */
+.availableUnitButton {
+  background-color: #64b5f6; /* Light blue */
+  color: white;
+}
+
+.availableUnitButton:hover {
+  background-color: #42a5f5; /* Darker light blue */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.flowItemButton {
+  background-color: rgb(180, 236, 236); /* Light blue */
+  color: black;
+}
+
+.flowItemButton:hover {
+  background-color: #42a5f5; /* Darker light blue */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.editButton {
+  background-color: lightgray; /* Light orange */
+  color: white;
+  padding: 8px 12px;
+}
+
+.editButton:hover {
+  background-color: #ffa726; /* Darker light orange */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.removeButton {
+  background-color: #ef5350; /* Light red */
+  color: white;
+  padding: 8px 12px;
+}
+
+.removeButton:hover {
+  background-color: #e53935; /* Darker light red */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Flow Item Container */
+.flowItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Run Plant Section */
+.runPlantSection {
+  text-align: center;
+  margin-top: 50px;
+}
+
+.runPlantButton {
+  padding: 14px 30px;
+  font-size: 18px;
+  background-color: black; /* Light blue */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.runPlantButton:hover {
+  background-color: #42a5f5; /* Darker light blue */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.runPlantButton:disabled {
+  background-color: #a0c4ff; /* Lighter blue when disabled */
+  cursor: not-allowed;
+}
+
+/* Running Message */
+.runningMessage {
+  margin-top: 15px;
+  color: #555;
+  font-size: 16px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.modalContent {
+  background-color: #ffffff;
+  padding: 30px 40px;
+  border-radius: 10px;
+  width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  animation: slideDown 0.3s ease-in-out;
+}
+
+.modalContent h3 {
+  margin-top: 0;
+  margin-bottom: 25px;
+  color: #333;
+  font-size: 1.8rem;
+  text-align: center;
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup label {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #555;
+}
+
+.formGroup input {
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  transition: border-color 0.3s ease;
+}
+
+.formGroup input:focus {
+  border-color: #64b5f6; /* Light blue */
+  outline: none;
+}
+
+.modalButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.saveButton {
+  padding: 10px 20px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.saveButton:hover {
+  background-color: #43a047;
+}
+
+.cancelButton {
+  padding: 10px 20px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.cancelButton:hover {
+  background-color: #e53935;
+}
+
+/* Error Message */
+.errorMessage {
+  margin-top: 20px;
+  padding: 15px 20px;
+  background-color: #ffebee;
+  color: #c62828;
+  border-left: 6px solid #f44336;
+  border-radius: 4px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+
+.simulationCompletedMessage {
+  margin-top: 20px;
+  padding: 15px 20px;
+  background-color: #e8f5e9; /* Light green background */
+  color: #2e7d32; /* Dark green text */
+  border-left: 6px solid #66bb6a; /* Green border for emphasis */
+  border-radius: 4px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  font-size: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Spinner Overlay (Optional Enhancement) */
+.spinnerOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.spinner {
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #64b5f6; /* Light blue */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+.spinnerText {
+  margin-top: 20px;
+  font-size: 1.2rem;
+  color: #555;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design Enhancements */
+@media (max-width: 768px) {
+  .modalContent {
+    width: 90%;
+    padding: 20px 25px;
+  }
+
+  .availableUnitButton,
+  .flowItemButton,
+  .editButton,
+  .removeButton {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+
+  .runPlantButton {
+    padding: 12px 25px;
+    font-size: 16px;
+  }
+
+  .runningMessage {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .availableUnitsSection h2,
+  .currentFlowSection h2 {
+    font-size: 1.5rem;
+  }
+}
+

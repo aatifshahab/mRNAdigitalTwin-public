@@ -1,0 +1,35 @@
+/* src/components/Lyo/Measured/LyoMeasured.module.css */
+
+.measured {
+  background-color: hsla(60, 2%, 88%, 0.884); /* Light yellowish background */
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  text-align: center;
+  color: #333333;
+  margin-bottom: 15px;
+}
+
+.measuredTags {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  justify-content: center;
+}
+
+/* Tag Container */
+.tagContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Measured Value */
+.value {
+  margin-top: 5px;
+  font-size: 14px;
+  color: #555555;
+}

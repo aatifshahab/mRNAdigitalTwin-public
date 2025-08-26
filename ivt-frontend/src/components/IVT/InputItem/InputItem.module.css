@@ -1,0 +1,67 @@
+/*
+// src/components/IVT/InputItem/InputItem.module.css */
+
+.inputItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.inputTag {
+  width: 80px;
+  height: 40px;
+  background-color: #9e9e9e;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 5px;
+  font-weight: bold;
+  color: black;
+  transition: background-color 0.3s, color 0.3s;
+  border: 1px solid #a0a0a0;
+}
+
+.inputTag:hover {
+  background-color: #a0a0a0;
+}
+
+.selected {
+  background-color: #81ade6;
+  color: #ffffff;
+  border: 1px solid #757575;
+}
+
+.inputField {
+  display: flex;
+  align-items: center;
+  margin: 5px 0;
+  background-color: hsla(60, 2%, 88%, 0.884);
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.input {
+  width: 80px;
+  padding: 5px;
+  margin-right: 5px;
+  font-size: 18px;
+  font-family: Arial, sans-serif;
+  color: #333333;
+  background-color: #ffffff;
+  border: 2px solid lightgray;
+  border-radius: 5px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #757575;
+  box-shadow: 0 0 5px rgba(117, 117, 117, 0.5);
+}
+
+.unit {
+  margin-left: 5px;
+  color: #333333;
+}

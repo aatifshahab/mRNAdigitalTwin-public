@@ -1,0 +1,40 @@
+/* src/components/RunPlant/RunPlant.css */
+
+.run-plant-section {
+  margin-top: auto; /* Pushes the section to the bottom */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 50px; /* Adjust as needed */
+  margin-left: 300px; 
+  
+}
+
+.final-time-input {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.final-time-input label {
+  margin-right: 5px;
+  color: #333333; /* Dark grey text */
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.final-time-input input {
+  width: 60px;
+  padding: 5px;
+  font-size: 18px; /* Increased font size */
+  font-family: Arial, sans-serif;
+  color: #333333; /* Dark grey text */
+  background-color: #ffffff; /* White background */
+  border: 1px solid #808080; /* Medium grey border */
+  border-radius: 4px;
+}
+
+.final-time-input span {
+  margin-left: 5px;
+  color: #333333; /* Dark grey text */
+}

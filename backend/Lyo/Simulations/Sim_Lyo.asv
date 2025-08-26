@@ -1,0 +1,24 @@
+function [sol1, sol_p1d, sol2] = Sim_Lyo(ip)
+
+% Freezing
+sol1 = Sim_Freezing(ip);
+time1 = sol1.t;
+Temp1 = sol1.T;
+Tg = sol1.Tg;
+
+% Preheat before primary drying
+ip.T0_p1d = Temp1(end);
+ip = input_processing(ip);
+sol_p1d = Sim_Pre1stDrying(ip);
+sol_p1d.t = sol_p1d.t + time1(end);
+Temp1_p1d = sol_p1d.T;
+Tb_p1d = sol_p1d.Tb;
+
+% Primary drying
+ip.T02 = Temp1_p1d(end);
+ip.Tb02 = 263;
+ip = input_processing(ip);
+sol2 = Sim_1stDrying(ip);
+sol2.t = sol2.t + sol_p1d.t(end);
+
+return

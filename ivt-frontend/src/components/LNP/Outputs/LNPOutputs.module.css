@@ -1,0 +1,44 @@
+/* src/components/LNP/Outputs/LNPOutputs.module.css */
+
+.outputsContainer {
+  background-color: rgb(230, 230, 230);
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+  width: 300px;
+  position: absolute;
+  right:200px;
+  top:270px;
+}
+
+.title {
+  text-align: center;
+  color: #333;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+.outputItem {
+  margin-bottom: 10px;
+}
+
+.error {
+  padding: 10px;
+  background-color: #fdd;
+  color: #a00;
+  border: 1px solid #a00;
+  border-radius: 4px;
+  text-align: center;
+}
+
+
+.outputItem {
+  display: flex;         /* lay children out in a row */
+  align-items: center;   /* vertically center tag + value */
+  gap: 0.5rem;           /* space between tag and number */
+}
+
+.outputItem span {
+  font-size: 18px;       /* bump the value up to 18px */
+  /* margin-left: 8px;   you can use margin-left instead of gap if you prefer */
+}

@@ -1,0 +1,47 @@
+/* src/components/LNP/Graphs/LNPGraphs.module.css */
+
+.graphsContainer {
+  background-color:(0, 0%, 93%);
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 0px rgba(0, 0, 0, 0.1);
+
+  position: absolute;
+  top:650px;
+}
+
+.title {
+  text-align: center;
+  color: #333;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+.graphs {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.graphSection {
+  
+
+  min-width: 400px;
+  min-height: 250px;
+  background-color: hsl(0, 0%, 93%);
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.1);
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.graphSection h3 {
+  margin: 5px 0;
+  color: #333;
+  flex-shrink: 0;
+}
