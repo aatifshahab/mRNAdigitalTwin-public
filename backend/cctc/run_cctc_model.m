@@ -104,6 +104,8 @@ function [tSol, unbound_mRNA, bound_mRNA] = run_cctc_model(states0_last_value, o
             bound_mRNA(iTime) = 0;
         end
     end
+
+    disp(params.Vbin_frac);
 end
 
 function deriv = CCTC_main(states, params)
