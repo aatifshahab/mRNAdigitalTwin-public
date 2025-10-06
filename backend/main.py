@@ -114,16 +114,20 @@ async def run_chain(chain_request: ChainRequest):
             elif unit_id == 'lnp' and 'final_mRNA' in last_output:
                 # LNP expects its mRNA input (C_mRNA) in mg/mL.
                 if prev_unit == 'ivt':
-                    inputs['C_mRNA'] = convert_uM_to_mg_per_ml(last_output['final_mRNA'], molar_mass=660000)
+                    m_in = convert_uM_to_mg_per_ml(last_output['final_mRNA'], molar_mass=660000)
                 elif prev_unit in ['membrane', 'cctc']:
-                    inputs['C_mRNA'] = last_output['final_mRNA']
+                    m_in = last_output['final_mRNA']
                 else:
-                    inputs['C_mRNA'] = last_output['final_mRNA']
+                    m_in = last_output['final_mRNA']
+
+                inputs['mRNA_in'] = m_in
+                inputs['C_mRNA'] = m_in
+                logging.info(f"[handoff] Feeding LNP from {prev_unit}: mRNA_in={inputs['mRNA_in']}")
 
             elif unit_id == 'lyo' and 'final_mRNA' in last_output:
                 # LYO takes the mass fraction (Fraction) from LNP.
                 if prev_unit == 'lnp':
-                    inputs['massFractionmRNA'] = last_output['final_mRNA']
+                    inputs['massFractionSolids'] = last_output['final_mRNA']
 
             # Run simulation for the current unit:
             if unit_id == 'ivt':
@@ -134,8 +138,22 @@ async def run_chain(chain_request: ChainRequest):
                     final_mRNA = None
                     logging.warning("IVT output missing or empty 'TotalRNAo'.")
             elif unit_id == 'membrane':
-                membrane_input = MembraneInput(**inputs)
-                result = run_membrane_model(**membrane_input.dict())
+                # membrane_input = MembraneInput(**inputs)
+                # result = run_membrane_model(**membrane_input.dict())
+                core_keys = {'qF', 'c0_mRNA', 'c0_protein', 'c0_ntps', 'X', 'n_stages', 'D', 'filterType'}
+                overrides = {k: v for k, v in inputs.items() if k not in core_keys}
+                membrane_input = {
+                    "qF": inputs["qF"],
+                    "c0_mRNA": inputs["c0_mRNA"],
+                    "c0_protein": inputs["c0_protein"],
+                    "c0_ntps": inputs["c0_ntps"],
+                    "X": inputs["X"],
+                    "n_stages": inputs["n_stages"],
+                    "D": inputs["D"],
+                    "filterType": inputs.get("filterType", "VIBRO"),
+                }
+
+                result = run_membrane_model(**membrane_input, **overrides)
                 if ('TFF_mRNA' in result and result['TFF_mRNA'] and 
                     isinstance(result['TFF_mRNA'][-1], list) and result['TFF_mRNA'][-1]):
                     final_mRNA = result['TFF_mRNA'][-1][-1]
@@ -157,7 +175,17 @@ async def run_chain(chain_request: ChainRequest):
                         )
 
                 cctc_input = CCTCInput(**inputs)
-                result = run_cctc_model(cctc_input.states0_last_value)
+                overrides = {k: v for k, v in inputs.items() if k != 'states0_last_value'}
+                inputs_used = {'states0_last_value': float(cctc_input.states0_last_value)}
+                for k, v in overrides.items():
+                    if isinstance(v, (int, float)):
+                        inputs_used[k] = float(v)     # normalize numbers to plain float
+                    elif isinstance(v, (str, bool)):
+                        inputs_used[k] = v            # keep simple JSON-safe types
+
+                result = run_cctc_model(cctc_input.states0_last_value, **overrides)
+                if isinstance(result, dict):
+                    result['inputs_used'] = inputs_used
                 if 'bound_mRNA' in result and result['bound_mRNA']:
                     final_mRNA = result['bound_mRNA'][-1]
                 else:
@@ -165,8 +193,14 @@ async def run_chain(chain_request: ChainRequest):
                     logging.warning("CCTC output missing or empty 'bound_mRNA'.")
 
             elif unit_id == 'lnp':
+                if 'mRNA_in' not in inputs and 'C_mRNA' in inputs:
+                    inputs['mRNA_in'] = inputs['C_mRNA']
                 lnp_input = LNPInput(**inputs)
                 result = run_lnp_model(**lnp_input.dict())
+                if isinstance(result, dict):
+                    result['inputs_used'] = {k: (float(v) if isinstance(v, (int, float)) else v)
+                                 for k, v in lnp_input.dict().items()}
+                
                 if 'Fraction' in result and result['Fraction'] is not None:
                     final_mRNA = result['Fraction']
                 else:
@@ -174,6 +208,12 @@ async def run_chain(chain_request: ChainRequest):
             elif unit_id == 'lyo':
                 lyo_input = LyoInput(**inputs)
                 result = run_lyo_model(**lyo_input.dict())
+                if isinstance(result, dict):
+                    result['inputs_used'] = {
+                        k: (float(v) if isinstance(v, (int, float)) else v)
+                        for k, v in lyo_input.dict().items()
+                    }
+
                 final_mRNA = None
             else:
                 error_msg = f"Unknown unit ID: {unit_id}"
@@ -199,7 +239,7 @@ async def run_chain(chain_request: ChainRequest):
         store_run_in_db(
             run_id=run_id,
             timestamp_str=timestamp_str,
-            chain_request=chain_request.dict(),  # You might use model_dump() if using Pydantic V2+
+            chain_request=chain_request.dict(),  # use model_dump() if using Pydantic V2+
             chain_results=chain_results_response
         )
         chain_results_response["runId"] = run_id

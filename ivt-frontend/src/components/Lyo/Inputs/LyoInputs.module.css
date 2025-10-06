@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  /* Removed absolute positioning here as it's handled by the container */
+
 }
 
 .header {
@@ -72,9 +72,7 @@
 .unit {
   font-size: 18px;
   color: #555555;
-  margin-left: 5px; /* Space between input and unit */
-
- 
+  margin-left: 5px; /* Space between input and unit */ 
 }
 
 /* Single Input Adjustments */

@@ -111,6 +111,9 @@ function Membrane() {
             Xactual: result.Xactual || 0.0,
           });
         }
+        if (result.inputs_used) {
+            setInputs(prev => ({ ...prev, ...result.inputs_used }));
+        }
       } catch (err) {
         console.error('Error fetching Membrane chain data:', err);
         setError('Failed to load Membrane chain data.');
@@ -214,7 +217,9 @@ function Membrane() {
         Jcrit: sim.Jcrit || 0.0,
         Xactual: sim.Xactual || 0.0,
       });
-
+      if (sim.inputs_used) {
+          setInputs(prev => ({ ...prev, ...sim.inputs_used }));
+      }
       // Optionally store in global context
       addChainResult(localUniqueId, sim);
     } catch (err) {
@@ -252,12 +257,13 @@ function Membrane() {
       <h1>Membrane Unit</h1>
 
       {/* Navigation Buttons */}
+      {/*
       <div className="navigation-buttons">
         <button onClick={openIVT}>Go to IVT Unit</button>
         <button onClick={openCCTC}>Go to CCTC Unit</button>
         <button onClick={openLNP}>Go to LNP Unit</button>
         <button onClick={openLyo}>Go to Freeze-drying Unit</button>
-      </div>
+      </div> */}
 
       {loading && <div>Loading...</div>}
       {error && <div className="error-message">{error}</div>}
@@ -352,9 +358,9 @@ function Membrane() {
           Or you can rely on <MembraneRun> already having a button, so maybe redundant. */}
       {!isChainMode && (
         <div className="run-unit-button">
-          <button onClick={handleRunMembrane} disabled={loading}>
+          {/* <button onClick={handleRunMembrane} disabled={loading}>
             {loading ? 'Running...' : 'Run Membrane Unit'}
-          </button>
+          </button> */}
         </div>
       )}
     </div>

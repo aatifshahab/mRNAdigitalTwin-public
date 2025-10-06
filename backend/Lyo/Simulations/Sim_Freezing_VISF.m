@@ -12,7 +12,11 @@ end
 % Parameters for ODE solver
 tf = ip.tpre1;  % final time
 dt = ip.dt1;  % data collection frequency from the ODE solver
-tspan = (0:dt:tf)';  % define the time span
+
+%tspan = (0:dt:tf)';  % define the time span
+
+% Edit by Aatif to check the smaller fraction coming from LNP
+tspan = ensure_tspan(0, tf, dt);   
 T0 = ip.T01;  % initial conditions
 
 % Solve the ODEs
@@ -74,7 +78,9 @@ tf = ip.tpost1;
 t = [t;t(end)];
 T = [T;Teq_ini];
 m_ice = [m_ice;mi];
-tspan = (t(end):dt:tf)';
+% tspan = (t(end):dt:tf)';
+
+tspan = ensure_tspan(t(end), tf, dt); % Edit by Aatif
 
 
 %% Solidification
@@ -96,7 +102,9 @@ m_ice = [m_ice;y2];
 
 %% Final Cooling
 y0 = T(end);
-tspan = (t(end):dt:tf)';
+% tspan = (t(end):dt:tf)';
+
+tspan = ensure_tspan(t(end), tf, dt); % Edit by Aatif
 
 % Solve the ODEs
 opts_ode4 = odeset('RelTol',ip.tol,'AbsTol',ip.tol);
@@ -122,3 +130,28 @@ outputs.mi = m_ice;
 outputs.P  = cal_P(t,P_profile);
 
 return
+end
+% New functon addd by Aatif
+function tspan = ensure_tspan(t0, tf, dt)
+    % Guarantee >= 2 points and strictly positive span for ode15s
+    if ~isfinite(t0), t0 = 0; end
+    if ~isfinite(tf), tf = t0; end
+    if ~isfinite(dt) || dt <= 0, dt = tf - t0; end
+
+    % If duration is zero/negative, force a tiny positive interval (no-op evolution)
+    if ~(tf > t0)
+        tf = t0 + 1e-6;  % 1 microsecond; small enough not to affect physics
+    end
+
+    % If colon would collapse, fall back to two-point span
+    if dt >= (tf - t0)
+        tspan = [t0, tf];
+    else
+        tspan = t0:dt:tf;
+        if numel(tspan) < 2
+            tspan = [t0, tf];
+        end
+    end
+
+    tspan = tspan(:); % column vector
+end

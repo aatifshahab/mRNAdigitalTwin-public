@@ -1,9 +1,65 @@
-// src/components/CCTC/CCTCInputs/CCTCInputs.jsx
+﻿// src/components/CCTC/CCTCInputs/CCTCInputs.jsx
 
+
+import React from 'react';
+import CCTCTag from '../CCTCTags/CCTCTag';
+import './CCTCInputs.css';
+import { CCTC_FIELDS } from '../../../units/cctcSpec';
+
+
+function CCTCInputs({ cctcInputs, handleCCTCInputChange, selectedTag, setSelectedTag }) {
+  const handleTagClick = (key) => setSelectedTag(key);
+
+  return (
+    <div className="cctc-inputs">
+      <h2>Input Variables</h2>
+
+      {/* 👇 This wrapper adds vertical scrolling without changing your layout */}
+      <div className="cctc-inputs-scroll">
+        <div className="cctc-input-fields">
+          {CCTC_FIELDS.map((f) => {
+            const labelText = f.symbol ? ` ${f.symbol}` : f.label;
+            const value = cctcInputs[f.key] ?? f.default;
+
+            return (
+              <div key={f.key} className="cctc-input-item" title={f.desc || ''}>
+                <CCTCTag
+                  label={labelText}
+                  isSelected={selectedTag === f.key}
+                  onClick={() => handleTagClick(f.key)}
+                  readOnly={false}
+                />
+                <div className="cctc-input-wrapper">
+                  <input
+                    type="number"
+                    value={value === '' ? '' : value}
+                    onChange={(e) => handleCCTCInputChange(e, f.key)}
+                    step="any"
+                    min={f.min !== undefined ? f.min : undefined}
+                    max={f.max !== undefined ? f.max : undefined}
+                    className="cctc-input-field"
+                  />
+                  <span className="cctc-input-unit">{f.unit || ''}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default CCTCInputs;
+
+
+
+{/*
 import React from 'react';
 import CCTCTag from '../CCTCTags/CCTCTag';
 import { formatNumber } from '../../utilits/formatNumber';
 import './CCTCInputs.css';
+import { CCTC_FIELDS } from '../../../units/cctcSpec';
 
 function CCTCInputs({ cctcInputs, handleCCTCInputChange, selectedTag, setSelectedTag }) {
   // Handle tag click
@@ -55,6 +111,7 @@ function CCTCInputs({ cctcInputs, handleCCTCInputChange, selectedTag, setSelecte
         </div> */}
 
         {/* Concentration of mRNA */}
+        {/*
         <div className="cctc-input-item">
           <CCTCTag
             label="mRNA"
@@ -77,6 +134,7 @@ function CCTCInputs({ cctcInputs, handleCCTCInputChange, selectedTag, setSelecte
         </div>
 
         {/* Resin Concentration (Placeholder) */}
+        {/*
         <div className="cctc-input-item">
           <CCTCTag
             label="Resin"
@@ -105,3 +163,4 @@ function CCTCInputs({ cctcInputs, handleCCTCInputChange, selectedTag, setSelecte
 }
 
 export default CCTCInputs;
+*/}

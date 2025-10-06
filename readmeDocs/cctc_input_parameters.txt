@@ -1,0 +1,54 @@
+CCTC — Input Parameters
+
+1) Feed mRNA concentration (c_s,in)
+   Unit: g/L | Default: 0.5
+   Meaning: Bulk mRNA entering the resin bed; drives loading and breakthrough.
+   Notes: Also used to set states0_last_value for the bulk phase.
+
+2) Max capacity (q_max)
+   Unit: g/L_resin | Default: 2.32
+   Meaning: Langmuir capacity; sets the maximum bound concentration in resin.
+   Effect: Higher q_max raises bound plateau; influences overall uptake.
+
+3) Affinity (Langmuir K)
+   Unit: L/g | Default: 1.0
+   Meaning: Langmuir affinity constant; shifts isotherm left/right.
+   Effect: Higher K increases binding at a given bulk concentration.
+
+4) Adsorption rate (k_ad)
+   Unit: 1/s | Default: 0.1
+   Meaning: Kinetic rate toward the isotherm.
+   Effect: Larger k_ad accelerates uptake and steepens breakthrough.
+
+5) Intraparticle diffusivity (D_p)
+   Unit: m²/s | Default: 1e-10
+   Meaning: Diffusion inside particles.
+   Effect: Lower D_p slows internal mass transfer; sharper fronts.
+
+6) Film transfer coefficient (k_f)
+   Unit: m/s | Default: 1e-5
+   Meaning: External mass transfer around beads.
+   Effect: Larger k_f reduces boundary-layer limitations.
+
+7) Particle porosity (ε_p)
+   Unit: – | Default: 0.35
+   Meaning: Void fraction inside beads.
+   Effect: Affects internal volumes and accumulation dynamics.
+
+8) Bed void fraction (φ)
+   Unit: – | Default: 0.40
+   Meaning: Interstitial voids in the packed bed.
+   Effect: Enters bulk balance; impacts effective velocities.
+
+9) Resin size-bin fractions (f1, f2, f3)
+   Unit: – | Defaults: 0.15, 0.15, 0.15 (sum ≈ 1)
+   Meaning: Distribution across resin size bins.
+   Effect: Weights each bin’s contribution; adjust for lot variability.
+
+10) Simulation horizon (t_final)
+    Unit: s | Default: 500
+    Meaning: End time for integration.
+
+11) Time step (Δt)
+    Unit: s | Default: 60
+    Meaning: Output sample spacing; smaller to resolve short transients.

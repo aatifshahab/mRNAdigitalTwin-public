@@ -2,43 +2,53 @@
 
 .outputsContainer {
   background-color: rgb(230, 230, 230);
-  padding: 15px;
+  padding: 0;                     /* we'll pad sections individually */
   border-radius: 5px;
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
-  width: 300px;
+  width: 330px;
+  
   position: absolute;
-  right:200px;
-  top:270px;
+  right: 220px;
+  top: 160px;
+
+  /* fixed box that scrolls inside */
+  max-height: 500px;              /* tweak as you like */
+  overflow-y: auto;               /* scroll here */
 }
 
+/* sticky header so it stays visible while scrolling */
 .title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgb(230, 230, 230);
   text-align: center;
   color: #333;
-  margin-bottom: 15px;
+  margin: 0;                      /* reset */
+  padding: 12px 15px;             /* moved padding here */
   font-weight: bold;
+  border-bottom: 1px solid #ddd;
 }
 
 .outputItem {
-  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 8px 15px;              /* inner padding per row */
+  margin: 0;                      /* avoid extra height */
+}
+
+.outputItem span {
+  font-size: 18px;
 }
 
 .error {
-  padding: 10px;
+  padding: 10px 15px;
   background-color: #fdd;
   color: #a00;
   border: 1px solid #a00;
   border-radius: 4px;
   text-align: center;
-}
-
-
-.outputItem {
-  display: flex;         /* lay children out in a row */
-  align-items: center;   /* vertically center tag + value */
-  gap: 0.5rem;           /* space between tag and number */
-}
-
-.outputItem span {
-  font-size: 18px;       /* bump the value up to 18px */
-  /* margin-left: 8px;   you can use margin-left instead of gap if you prefer */
+  margin: 8px 15px 12px;
 }

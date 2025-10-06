@@ -25,13 +25,13 @@ function LNP() {
   // 1. State: Inputs and Outputs
   // -----------------------------------
   const [inputs, setInputs] = useState({
-    Residential_time: 3600, 
+    Residential_time: 1, 
     FRR: 3,
     pH: 5.5,
     Ion: 0.1,
     TF: 0,
     C_lipid: 10,    
-    mRNA_in: 10,
+    mRNA_in: 0.05,
   });
 
   const [outputs, setOutputs] = useState({
@@ -39,6 +39,9 @@ function LNP() {
     PSD: [],
     EE: null,       
     Fraction: null,
+    PDI: null,
+    D10: null, D50: null, D90: null,
+    D25: null, D75: null,
     error: null,
   });
 
@@ -71,8 +74,19 @@ function LNP() {
             PSD: result.PSD || [],
             EE:       result.EE         != null ? result.EE       : null,
             Fraction: result.Fraction   != null ? result.Fraction : null,
+            EE:       result.EE       ?? null,
+            Fraction: result.Fraction ?? null,
+            PDI:      result.PDI      ?? null,
+            D10:      result.D10      ?? null,
+            D50:      result.D50      ?? null,
+            D90:      result.D90      ?? null,
+            D25:      result.D25      ?? null,
+            D75:      result.D75      ?? null,
             error: result.error || null,
           });
+        if (result.inputs_used) {
+        setInputs(prev => ({ ...prev, ...result.inputs_used }));
+        }
         }
       } catch (err) {
         console.error('Error fetching LNP chain data:', err);
@@ -139,8 +153,18 @@ function LNP() {
       // sim => { Diameter: [...], PSD: [...], error: null }
       setOutputs({
         Diameter: sim.Diameter || [],
-        PSD: sim.PSD || [],
-        error: sim.error || null,
+        PSD: sim.PSD || [],       
+        EE:       sim.EE ?? null,
+        Fraction: sim.Fraction ?? null ,
+        EE:       sim.EE       ?? null,
+        Fraction: sim.Fraction ?? null,
+        PDI:      sim.PDI      ?? null,
+        D10:      sim.D10      ?? null,
+        D50:      sim.D50      ?? null,
+        D90:      sim.D90      ?? null,
+        D25:      sim.D25      ?? null,
+        D75:      sim.D75      ?? null,
+        error:    sim.error || null,
       });
 
       // Optionally store in context
@@ -181,7 +205,7 @@ function LNP() {
       <h1 className={styles.title}>LNP Unit</h1>
 
       {/* Navigation Buttons */}
-      <div className={styles.navigationButtons}>
+      {/*<div className={styles.navigationButtons}>
         <button onClick={openIVT} className={styles.navButton}>
           Go to IVT Unit
         </button>
@@ -194,7 +218,7 @@ function LNP() {
         <button onClick={openLyo} className={styles.navButton}>
           Go to Freeze-drying Unit
         </button>
-      </div>
+      </div>*/}
 
       {loading && <div>Loading...</div>}
       {error && <div className={styles.errorMessage}>{error}</div>}

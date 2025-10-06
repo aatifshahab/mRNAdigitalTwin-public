@@ -52,10 +52,29 @@ def get_matlab_engine():
     return eng
 
 
-# CCTC model call
-def run_cctc_model(states0_last_value):
+def _build_overrides_struct(eng, overrides: dict):
+    """
+    Build a MATLAB struct('k1',v1,'k2',v2,...) from numeric overrides.
+    Returns None if no valid fields provided.
+    """
+    if not overrides:
+        return None
+    arglist = []
+    for k, v in overrides.items():
+        if k == 'states0_last_value' or v is None:
+            continue
+        # keep it simple: only scalars for now
+        if isinstance(v, (int, float)):
+            arglist.extend([k, float(v)])
+    if not arglist:
+        return None
+    # struct('k1',v1,'k2',v2,...) -> MATLAB will create a 1x1 struct
+    return eng.struct(*arglist, nargout=1)
+
+
+# CCTC model call updated (see ivt-frontend/src/units/cctcSpec   to knw what units can be tuned)
+def run_cctc_model(states0_last_value, **overrides):
     try:
-        # Get the MATLAB engine instance
         eng = get_matlab_engine()
 
         cwd = eng.pwd(nargout=1)
@@ -67,43 +86,50 @@ def run_cctc_model(states0_last_value):
         else:
             logging.warning("[MATLAB] run_cctc_model not found in MATLAB path!")
 
-        # Convert the input to MATLAB data type
+        # MATLAB scalar double
         states0_last_value_matlab = matlab.double([float(states0_last_value)])
-        logging.info(f"Calling MATLAB function 'run_cctc_model' with input: {states0_last_value}")
-        
+        logging.info(f"Calling MATLAB 'run_cctc_model' with states0_last_value={states0_last_value}")
 
-        # Call the MATLAB function
-        tSol, unbound_mRNA, bound_mRNA = eng.run_cctc_model(states0_last_value_matlab, nargout=3)
-        logging.info(f"Received unbound_mRNA from MATLAB: {unbound_mRNA}")
-        logging.info(f"Received bound_mRNA from MATLAB: {bound_mRNA}")
-        logging.info(f"Received time data from MATLAB: {tSol}")
-       
-        # Convert the output to a NumPy array
+        # Build overrides struct only if extras were provided
+        ov_struct = _build_overrides_struct(eng, overrides)
+
+        # Prefer the 2-arg call if we have overrides; otherwise use 1-arg
+        if ov_struct is not None:
+            try:
+                tSol, unbound_mRNA, bound_mRNA = eng.run_cctc_model(
+                    states0_last_value_matlab, ov_struct, nargout=3
+                )
+            except Exception as e:
+                # Backward-compat: fall back to the original 1-arg signature
+                logging.warning(f"[MATLAB] 2-arg call failed, falling back to 1-arg. Error: {e}")
+                tSol, unbound_mRNA, bound_mRNA = eng.run_cctc_model(
+                    states0_last_value_matlab, nargout=3
+                )
+        else:
+            tSol, unbound_mRNA, bound_mRNA = eng.run_cctc_model(
+                states0_last_value_matlab, nargout=3
+            )
+
+        # Convert outputs to Python lists
         time = np.array(tSol).flatten().tolist()
-        unbound_mRNA = np.array(unbound_mRNA).flatten()
-        bound_mRNA = np.array(bound_mRNA).flatten()
-      
-
-         # Calculate bound mRNA by subtracting unbound mRNA from the initial mRNA value
-        # bound_mRNA = [states0_last_value - u for u in unbound_mRNA]
-
-        # logging.info(f"Calculated bound_mRNA: {bound_mRNA}")
+        unbound_mRNA = np.array(unbound_mRNA).flatten().tolist()
+        bound_mRNA = np.array(bound_mRNA).flatten().tolist()
 
         return {
             "time": time,
-            "unbound_mRNA": unbound_mRNA.tolist(),
-            "bound_mRNA": bound_mRNA.tolist()
+            "unbound_mRNA": unbound_mRNA,
+            "bound_mRNA": bound_mRNA
         }
-    
-    
+
     except Exception as e:
         logging.error(f"Error in running MATLAB function: {e}")
         raise RuntimeError(f"Error in running MATLAB function: {e}")
 
 
 
+
 # Lyo model call
-def run_lyo_model(fluidVolume, massFractionmRNA, InitfreezingTemperature, 
+def run_lyo_model(fluidVolume, massFractionSolids, InitfreezingTemperature, 
                  InitprimaryDryingTemperature, InitsecondaryDryingTemperature, 
                  TempColdGasfreezing, TempShelfprimaryDrying, 
                  TempShelfsecondaryDrying, Pressure):
@@ -112,7 +138,7 @@ def run_lyo_model(fluidVolume, massFractionmRNA, InitfreezingTemperature,
 
     Parameters:
     - fluidVolume (float): Volume of the fluid (m3).
-    - massFractionmRNA (float): Mass fraction of mRNA (kg/kg).
+    - massFractionSolids (float):  (kg/kg).
     - InitfreezingTemperature (float): Initial freezing temperature (K).
     - InitprimaryDryingTemperature (float): Initial primary drying temperature (K).
     - InitsecondaryDryingTemperature (float): Initial secondary drying temperature (K).
@@ -132,7 +158,7 @@ def run_lyo_model(fluidVolume, massFractionmRNA, InitfreezingTemperature,
 
         # Convert inputs to MATLAB data types (floats)
         fluidVolume_matlab = float(fluidVolume)
-        massFractionmRNA_matlab = float(massFractionmRNA)
+        massFractionSolids_matlab = float(massFractionSolids)
         InitfreezingTemperature_matlab = float(InitfreezingTemperature)
         InitprimaryDryingTemperature_matlab = float(InitprimaryDryingTemperature)
         InitsecondaryDryingTemperature_matlab = float(InitsecondaryDryingTemperature)
@@ -143,7 +169,7 @@ def run_lyo_model(fluidVolume, massFractionmRNA, InitfreezingTemperature,
 
         # Log input values
         logging.info(f"Inputs to LyoAppInterface: fluidVolume={fluidVolume_matlab}, "
-                     f"massFractionmRNA={massFractionmRNA_matlab}, "
+                     f"massFractionSolids={massFractionSolids_matlab}, "
                      f"InitfreezingTemperature={InitfreezingTemperature_matlab}, "
                      f"InitprimaryDryingTemperature={InitprimaryDryingTemperature_matlab}, "
                      f"InitsecondaryDryingTemperature={InitsecondaryDryingTemperature_matlab}, "
@@ -153,7 +179,7 @@ def run_lyo_model(fluidVolume, massFractionmRNA, InitfreezingTemperature,
                      f"Pressure={Pressure_matlab}")
 
         # Call the MATLAB function
-        outputs = eng.LyoAppInterface(fluidVolume_matlab, massFractionmRNA_matlab, 
+        outputs = eng.LyoAppInterface(fluidVolume_matlab, massFractionSolids_matlab, 
                                       InitfreezingTemperature_matlab, 
                                       InitprimaryDryingTemperature_matlab, 
                                       InitsecondaryDryingTemperature_matlab, 
@@ -200,107 +226,129 @@ def run_lyo_model(fluidVolume, massFractionmRNA, InitfreezingTemperature,
 
 
 # Membrane model call
-def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterType):
+
+def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterType, **overrides):
     try:
         eng_instance = get_matlab_engine()
-        logging.info(f"Running membrane model with qF={qF}, mRNA={c0_mRNA}, protein={c0_protein}, ntp={c0_ntps}, conversion={X}, stages={n_stages}")
+        logging.info(
+            "Running membrane model with qF=%s, mRNA=%s, protein=%s, ntp=%s, conversion=%s, stages=%s, D=%s, filterType=%s, overrides=%s",
+            qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterType, list(overrides.keys())
+        )
 
-        # Convert Python values to MATLAB data types
+        # === original conversions (unchanged) ===
         qF_matlab         = float(qF)
         c0_matlab         = matlab.double([float(c0_mRNA), float(c0_protein), float(c0_ntps)])
         c0_matlab         = eng_instance.transpose(c0_matlab)  # 3×1 column vector
         X_matlab          = float(X)
         n_stages_matlab   = float(n_stages)
         D_matlab          = float(D)
-        filterType_matlab = str(filterType)
+        ft                = str(filterType)
 
-        # The  membraneAPI.m  has 12 outputs:
-        #   1) time_points
-        #   2) x_positions
-        #   3) Cmatrix_mRNA
-        #   4) Cmatrix_protein
-        #   5) Cmatrix_ntps
-        #   6) interpolated_times
-        #   7) interpolated_indices
-        #   8) td
-        #   9) TFF_protein
-        #  10) TFF_ntps
-        #  11) Jcrit
-        #  12) Xactual
-        #  13) TFF_mRNA
-        outputs = eng_instance.membraneAPI(
-            qF_matlab,
-            c0_matlab,
-            X_matlab,
-            n_stages_matlab,
-            D_matlab,
-            filterType_matlab,
-            nargout=13
-        )
+        # (Optional) normalize the HF spelling used in MATLAB code:
+        # MATLAB checks "NOVIBRO" for the HF branch; keep behavior identical
+        filterType_matlab = "NOVIBRO" if ft.upper() == "HF" else ft
 
-        # Extract each
-        time_points_mat         = outputs[0]
-        x_positions_mat         = outputs[1]
-        Cmatrix_mRNA_mat        = outputs[2]
-        Cmatrix_protein_mat     = outputs[3]
-        Cmatrix_ntps_mat        = outputs[4]
-        interpolated_times_mat  = outputs[5]
-        interpolated_indices_mat= outputs[6]
-        td_mat                  = outputs[7]
-        TFF_protein_mat         = outputs[8]
-        TFF_ntps_mat            = outputs[9]
-        Jcrit_val               = float(outputs[10])
-        Xactual_val             = float(outputs[11])
-        TFF_mRNA_mat            = outputs[12]
+        # === NEW: pack overrides (numeric/simple scalars only) ===
+        ov_struct = _build_overrides_struct(eng_instance, overrides)
 
-        # Convert to Python
-        time_points_py         = np.array(time_points_mat).flatten().tolist()
-        x_positions_py         = np.array(x_positions_mat).flatten().tolist()
+        # === Call MATLAB (prefer with overrides; fall back if needed) ===
+        if ov_struct is not None:
+            try:
+                outputs = eng_instance.membraneAPI(
+                    qF_matlab,
+                    c0_matlab,
+                    X_matlab,
+                    n_stages_matlab,
+                    D_matlab,
+                    filterType_matlab,
+                    ov_struct,
+                    nargout=13
+                )
+            except Exception as e:
+                logging.warning("[MATLAB] membraneAPI(..., opts) failed; falling back: %s", e)
+                outputs = eng_instance.membraneAPI(
+                    qF_matlab,
+                    c0_matlab,
+                    X_matlab,
+                    n_stages_matlab,
+                    D_matlab,
+                    filterType_matlab,
+                    nargout=13
+                )
+        else:
+            outputs = eng_instance.membraneAPI(
+                qF_matlab,
+                c0_matlab,
+                X_matlab,
+                n_stages_matlab,
+                D_matlab,
+                filterType_matlab,
+                nargout=13
+            )
 
-        Cmatrix_mRNA_py        = np.array(Cmatrix_mRNA_mat).tolist()   # 2D
-        Cmatrix_protein_py     = np.array(Cmatrix_protein_mat).tolist()# 2D
-        Cmatrix_ntps_py        = np.array(Cmatrix_ntps_mat).tolist()   # 2D
+        # === original unpack + conversions (unchanged) ===
+        time_points_mat          = outputs[0]
+        x_positions_mat          = outputs[1]
+        Cmatrix_mRNA_mat         = outputs[2]
+        Cmatrix_protein_mat      = outputs[3]
+        Cmatrix_ntps_mat         = outputs[4]
+        interpolated_times_mat   = outputs[5]
+        interpolated_indices_mat = outputs[6]
+        td_mat                   = outputs[7]
+        TFF_protein_mat          = outputs[8]
+        TFF_ntps_mat             = outputs[9]
+        Jcrit_val                = float(outputs[10])
+        Xactual_val              = float(outputs[11])
+        TFF_mRNA_mat             = outputs[12]
 
-        interpolated_times_py  = np.array(interpolated_times_mat).flatten().tolist()
-        interpolated_indices_py= np.array(interpolated_indices_mat).astype(int).flatten().tolist()
+        time_points_py          = np.array(time_points_mat).flatten().tolist()
+        x_positions_py          = np.array(x_positions_mat).flatten().tolist()
+        Cmatrix_mRNA_py         = np.array(Cmatrix_mRNA_mat).tolist()
+        Cmatrix_protein_py      = np.array(Cmatrix_protein_mat).tolist()
+        Cmatrix_ntps_py         = np.array(Cmatrix_ntps_mat).tolist()
+        interpolated_times_py   = np.array(interpolated_times_mat).flatten().tolist()
+        interpolated_indices_py = np.array(interpolated_indices_mat).astype(int).flatten().tolist()
+        td_py                   = np.array(td_mat).flatten().tolist()
 
-        td_py                  = np.array(td_mat).flatten().tolist()
-
-        # TFF_protein_mat and TFF_ntps_mat are cell arrays of dimension 1×n_stages
-        # Each cell is a column vector of that stage's data.
-        # Convert each stage to a Python list
-        TFF_protein_py = []
-        for cell_array in TFF_protein_mat:
-            arr = np.array(cell_array).flatten().tolist()
-            TFF_protein_py.append(arr)
-
-        TFF_ntps_py = []
-        for cell_array in TFF_ntps_mat:
-            arr = np.array(cell_array).flatten().tolist()
-            TFF_ntps_py.append(arr)
-
-        TFF_mRNA_py = []
-        for cell_array in TFF_mRNA_mat:
-            arr = np.array(cell_array).flatten().tolist()
-            TFF_mRNA_py.append(arr)
+        TFF_protein_py = [np.array(cell_array).flatten().tolist() for cell_array in TFF_protein_mat]
+        TFF_ntps_py    = [np.array(cell_array).flatten().tolist() for cell_array in TFF_ntps_mat]
+        TFF_mRNA_py    = [np.array(cell_array).flatten().tolist() for cell_array in TFF_mRNA_mat]
 
         result = {
-            "time_points": time_points_py,
-            "x_positions": x_positions_py,
-            "Cmatrix_mRNA": Cmatrix_mRNA_py,
-            "Cmatrix_protein": Cmatrix_protein_py,
-            "Cmatrix_ntps": Cmatrix_ntps_py,
-            "interpolated_times": interpolated_times_py,
+            "time_points":          time_points_py,
+            "x_positions":          x_positions_py,
+            "Cmatrix_mRNA":         Cmatrix_mRNA_py,
+            "Cmatrix_protein":      Cmatrix_protein_py,
+            "Cmatrix_ntps":         Cmatrix_ntps_py,
+            "interpolated_times":   interpolated_times_py,
             "interpolated_indices": interpolated_indices_py,
-            "td": td_py,
-            "TFF_protein": TFF_protein_py,
-            "TFF_ntps": TFF_ntps_py,
-            "Jcrit": Jcrit_val,
-            "Xactual": Xactual_val,
-            "TFF_mRNA": TFF_mRNA_py
+            "td":                   td_py,
+            "TFF_protein":          TFF_protein_py,
+            "TFF_ntps":             TFF_ntps_py,
+            "Jcrit":                Jcrit_val,
+            "Xactual":              Xactual_val,
+            "TFF_mRNA":             TFF_mRNA_py,
         }
-        logging.info(f"Membrane model outputs: {result}")
 
+        # === NEW: echo back the exact inputs the model used (for GUI display) ===
+        # Map NOVIBRO back to "HF" so the UI shows what users expect.
+        filter_out = "HF" if filterType_matlab.upper() == "NOVIBRO" else filterType_matlab
+        inputs_used = {
+            "qF": float(qF),
+            "c0_mRNA": float(c0_mRNA),
+            "c0_protein": float(c0_protein),
+            "c0_ntps": float(c0_ntps),
+            "X": float(X),
+            "n_stages": float(n_stages),
+            "D": float(D),
+            "filterType": filter_out,
+        }
+        for k, v in overrides.items():
+            if isinstance(v, (int, float)): inputs_used[k] = float(v)
+            elif isinstance(v, (str, bool)): inputs_used[k] = v
+        result["inputs_used"] = inputs_used
+
+        logging.info("Membrane model outputs ready.")
         return result
 
     except Exception as e:
@@ -314,7 +362,7 @@ def run_lnp_model(Residential_time, FRR, pH, Ion, TF, C_lipid, mRNA_in):
     try:
         eng = get_matlab_engine()
         logging.info(f"Running LNP model with Residential_time={Residential_time}, FRR={FRR}, pH={pH}, Ion={Ion}, TF={TF}, C_lipid={C_lipid}, mRNA_in={mRNA_in}")
-
+       
         # Convert inputs to MATLAB data types
         Residential_time_matlab = float(Residential_time)
         FRR_matlab = float(FRR)
@@ -325,7 +373,7 @@ def run_lnp_model(Residential_time, FRR, pH, Ion, TF, C_lipid, mRNA_in):
         mRNA_in_matlab = float(mRNA_in)
 
         # Call the MATLAB LNP function with 7 inputs and 5 outputs
-        Diameter, PSD, EE, mRNA_out, Fraction = eng.Main(
+        Diameter, PSD, EE, mRNA_out, Fraction, PDI_val, Dstats = eng.Main(
             Residential_time_matlab,
             FRR_matlab,
             pH_matlab,
@@ -333,7 +381,7 @@ def run_lnp_model(Residential_time, FRR, pH, Ion, TF, C_lipid, mRNA_in):
             TF_matlab,
             C_lipid_matlab,
             mRNA_in_matlab,
-            nargout=5
+            nargout=7
         )
 
         logging.info("Received outputs from MATLAB LNP function.")
@@ -344,6 +392,15 @@ def run_lnp_model(Residential_time, FRR, pH, Ion, TF, C_lipid, mRNA_in):
         EE_py = float(EE)
         mRNA_out_py = float(mRNA_out)
         Fraction_py = float(Fraction)
+        PDI_py       = float(PDI_val)
+
+        # Dstats is [D10, D50, D90, (optional) D25, D75]; handle length safely
+        Dstats_arr = np.array(Dstats).flatten().tolist()
+        D10_py = Dstats_arr[0] if len(Dstats_arr) > 0 else None
+        D50_py = Dstats_arr[1] if len(Dstats_arr) > 1 else None
+        D90_py = Dstats_arr[2] if len(Dstats_arr) > 2 else None
+        D25_py = Dstats_arr[3] if len(Dstats_arr) > 3 else None
+        D75_py = Dstats_arr[4] if len(Dstats_arr) > 4 else None
 
         return {
             "Diameter": Diameter_py,
@@ -351,160 +408,15 @@ def run_lnp_model(Residential_time, FRR, pH, Ion, TF, C_lipid, mRNA_in):
             "EE": EE_py,
             "mRNA_out": mRNA_out_py,
             "Fraction": Fraction_py,
+            "PDI":       PDI_py,
+            "D10":       D10_py,
+            "D50":       D50_py,
+            "D90":       D90_py,
+            "D25":       D25_py,
+            "D75":       D75_py,
         }
 
     except Exception as e:
         logging.error(f"Error in running MATLAB LNP function: {e}")
         raise RuntimeError(f"Error in running MATLAB LNP function: {e}")
 
-# def run_lnp_model(Residential_time, FRR, pH, Ion, TF):
-#     try:
-#         # Get the MATLAB engine instance
-#         eng = get_matlab_engine()
-
-#         logging.info(f"Running LNP model with Residential_time={Residential_time}, FRR={FRR}, pH={pH}, Ion={Ion}, TF={TF}")
-
-#         # Convert inputs to MATLAB data types
-#         Residential_time_matlab = float(Residential_time)
-#         FRR_matlab = float(FRR)
-#         pH_matlab = float(pH)
-#         Ion_matlab = float(Ion)
-#         TF_matlab = float(TF)
-
-#         # Call the MATLAB LNP function
-       
-#         Diameter, PSD = eng.LNP(Residential_time_matlab, FRR_matlab, pH_matlab, Ion_matlab, TF_matlab, nargout=2)
-
-#         logging.info("Received outputs from MATLAB LNP function.")
-
-#         # Convert MATLAB outputs to Python lists
-#         Diameter_py = np.array(Diameter).tolist()  # Assuming Diameter is a 2D array
-#         PSD_py = np.array(PSD).tolist()            # Assuming PSD is a 2D array
-
-#         return {
-#             "Diameter": Diameter_py,
-#             "PSD": PSD_py
-#         }
-
-#     except Exception as e:
-#         logging.error(f"Error in running MATLAB LNP function: {e}")
-#         raise RuntimeError(f"Error in running MATLAB LNP function: {e}")
-
-
-
-# def run_membrane_model(qF, c0_mRNA, c0_protein, c0_ntps, X, n_stages, D, filterType, V_IVT):
-#     """
-#     Runs the membraneAPI_new MATLAB function and retrieves the outputs.
-
-#     Parameters:
-#         qF (float): Feed flow rate [mL/min], e.g., 1-5
-#         c0_mRNA (float): Initial mRNA concentration [mg/mL]
-#         c0_protein (float): Initial protein concentration [mg/mL]
-#         c0_ntps (float): Initial NTPs concentration [mg/mL]
-#         X (float): Desired conversion (0 < X < 1)
-#         n_stages (int): Number of TFF stages (>=2)
-#         D (float): Diafiltration buffer flow rate [mL/min]
-#         filterType (str): 'NOVIBRO' or 'VIBRO'
-#         V_IVT (float): Total processing volume [mL], e.g., 3000 for 3L
-
-#     Returns:
-#         dict: A dictionary containing all outputs from membraneAPI_new
-#     """
-#     try:
-#         eng_instance = get_matlab_engine()
-
-#         # Convert Python values to MATLAB data types
-#         qF_matlab = float(qF)
-#         c0_matlab = matlab.double([float(c0_mRNA), float(c0_protein), float(c0_ntps)])
-#         c0_matlab = eng_instance.transpose(c0_matlab)  # Convert to 3×1 column vector
-#         X_matlab = float(X)
-#         n_stages_matlab = float(n_stages)
-#         D_matlab = float(D)
-#         filterType_matlab = str(filterType)
-#         V_IVT_matlab = float(V_IVT)
-
-#         # ***Added Section: Call the updated membraneAPI_new MATLAB function with 17 outputs***
-#         outputs = eng_instance.membraneAPI_new(
-#             qF_matlab,
-#             c0_matlab,
-#             X_matlab,
-#             n_stages_matlab,
-#             D_matlab,
-#             filterType_matlab,
-#             V_IVT_matlab,
-#             nargout=17  # Updated to reflect the new number of outputs
-#         )
-      
-
-#         # Extract each output
-#         time_points_mat = outputs[0]
-#         x_positions_mat = outputs[1]
-#         Cmatrix_mRNA_mat = outputs[2]
-#         Cmatrix_protein_mat = outputs[3]
-#         Cmatrix_ntps_mat = outputs[4]
-#         td_mat = outputs[5]
-#         TFF_protein_mat = outputs[6]
-#         TFF_ntps_mat = outputs[7]
-#         t_ss_mat = outputs[8]
-#         Reduction_mat = outputs[9]
-#         V_final_mat = outputs[10]
-#         avg_conc_pre_ccdf_mat = outputs[11]
-#         avg_conc_post_ccdf_mat = outputs[12]
-#         ccdf_time_mat = outputs[13]
-#         X_actual_mat = outputs[14]
-#         interpolated_times_mat = outputs[15]  
-#         interpolated_indices_mat = outputs[16] 
-
-#         # Convert MATLAB data types to Python
-#         time_points_py = np.array(time_points_mat).flatten().tolist()
-#         x_positions_py = np.array(x_positions_mat).flatten().tolist()
-
-#         Cmatrix_mRNA_py = np.array(Cmatrix_mRNA_mat).tolist()       # 2D list
-#         Cmatrix_protein_py = np.array(Cmatrix_protein_mat).tolist() # 2D list
-#         Cmatrix_ntps_py = np.array(Cmatrix_ntps_mat).tolist()       # 2D list
-
-#         td_py = np.array(td_mat).flatten().tolist()
-
-#         # Convert cell arrays to lists of lists for TFF_protein and TFF_ntps
-#         TFF_protein_py = [np.array(stage).flatten().tolist() for stage in TFF_protein_mat]
-#         TFF_ntps_py = [np.array(stage).flatten().tolist() for stage in TFF_ntps_mat]
-
-#         t_ss_py = np.array(t_ss_mat).flatten().tolist()
-#         Reduction_py = np.array(Reduction_mat).flatten().tolist()
-#         V_final_py = float(V_final_mat)
-#         avg_conc_pre_ccdf_py = np.array(avg_conc_pre_ccdf_mat).flatten().tolist()
-#         avg_conc_post_ccdf_py = np.array(avg_conc_post_ccdf_mat).flatten().tolist()
-#         ccdf_time_py = float(ccdf_time_mat)
-#         X_actual_py = float(X_actual_mat)
-
-   
-#         interpolated_times_py = np.array(interpolated_times_mat).flatten().tolist()
-#         interpolated_indices_py = np.array(interpolated_indices_mat).flatten().astype(int).tolist()
-       
-
-#         # Prepare the result dictionary
-#         result = {
-#             "time_points": time_points_py,
-#             "x_positions": x_positions_py,
-#             "Cmatrix_mRNA": Cmatrix_mRNA_py,
-#             "Cmatrix_protein": Cmatrix_protein_py,
-#             "Cmatrix_ntps": Cmatrix_ntps_py,
-#             "td": td_py,
-#             "TFF_protein": TFF_protein_py,
-#             "TFF_ntps": TFF_ntps_py,
-#             "t_ss": t_ss_py,
-#             "Reduction": Reduction_py,
-#             "V_final": V_final_py,
-#             "avg_conc_pre_ccdf": avg_conc_pre_ccdf_py,
-#             "avg_conc_post_ccdf": avg_conc_post_ccdf_py,
-#             "ccdf_time": ccdf_time_py,
-#             "X": X_actual_py,
-#             "interpolated_times": interpolated_times_py,      
-#             "interpolated_indices": interpolated_indices_py    
-#         }
-
-#         return result
-
-#     except Exception as e:
-#         logging.error(f"Error in run_membrane_model: {e}")
-#         raise RuntimeError(f"Error in run_membrane_model: {e}")

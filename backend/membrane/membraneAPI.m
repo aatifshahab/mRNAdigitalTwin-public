@@ -11,43 +11,44 @@ function [ ...
     TFF_ntps, ...
     Jcrit, ...
     Xactual, TFF_mRNA ] = ...
-    membraneAPI(qF, c0, X, n_stages, D, filterType)
+    membraneAPI(qF, c0, X, n_stages, D, filterType, opts)
+
+if nargin < 7
+        opts = struct();
+end
+
 % membraneAPI
-% Returns arrays needed for plotting:
-% (1) time_points and x_positions
-% (2) Cmatrix for mRNA, protein, NTPs (N×M)
-% (3) interpolated_times and interpolated_indices for snapshot plots
-% (4) td (diafiltration time)
-% (5) TFF_protein and TFF_ntps across stages vs. td
-% (6) Jcrit and Xactual for reporting
+%
 %
 % SYNTAX:
-%   [time_points, x_positions, Cmatrix_mRNA, Cmatrix_protein, Cmatrix_ntps,
-%    interpolated_times, interpolated_indices, td, TFF_protein, TFF_ntps,
-%    Jcrit, Xactual] = ...
-%       membraneAPI(qF, c0, X, n_stages, D, filterType)
+%   [time_points, x_positions, Cmatrix_mRNA, Cmatrix_protein, Cmatrix_ntps, ...
+%    interpolated_times, interpolated_indices, td, TFF_protein, TFF_ntps, ...
+%    Jcrit, Xactual, TFF_mRNA] = ...
+%       membraneAPI(qF, c0, X, n_stages, D, filterType, opts)
 %
 % INPUTS:
 %   qF         : Feed flow rate [mL/min], e.g. 1–5
-%   c0         : 3×1 vector [mRNA; protein; NTPs] initial conc.
+%   c0         : 3×1 vector of initial concentrations [mRNA; protein; NTPs] in mg/mL (≡ g/L)
 %   X          : Desired conversion (0 < X < 1)
 %   n_stages   : Number of TFF stages (>=2)
 %   D          : Diafiltration buffer flow rate [mL/min]
-%   filterType : 'HF' or 'VIBRO'
+%   filterType : 'NOVIBRO' or 'VIBRO'
+%   opts       : (optional struct) overrides for model/solver parameters.
+%                Common fields you may support:
+%                  - dt        : time step for PDE solver (min)
+%                  - tfinal    : final PDE time (min)
+%                  - Diff      : diffusion coefficient [cm^2/min]
+%                  - S         : retention exponent (overrides computed S)
+%                  - VTFF      : total TFF holdup volume
+%                  - B, n_v    : VIBRO Jcrit params
+%                  - L_HF, K_HF, n_HF : NOVIBRO Jcrit params
+%                If omitted, defaults are used per filterType.
 %
 % OUTPUTS:
-%   time_points          : 1×N array of times for the PDE solution
-%   x_positions          : 1×M array of positions along the membrane
-%   Cmatrix_mRNA         : N×M PDE solution for mRNA
-%   Cmatrix_protein      : N×M PDE solution for protein
-%   Cmatrix_ntps         : N×M PDE solution for NTPs
-%   interpolated_times   : 1×10 array of snapshot times (for 2D plots)
-%   interpolated_indices : indices in time_points that match interpolated_times
-%   td                   : Diafiltration time vector
-%   TFF_protein          : 1×n_stages cell; each cell is array of protein vs. td
-%   TFF_ntps             : 1×n_stages cell; each cell is array of NTPs vs. td
-%   Jcrit                : Critical flux
-%   Xactual              : Actual conversion (may differ from X if X > Xcrit)
+%   time_points, x_positions, Cmatrix_mRNA, Cmatrix_protein, Cmatrix_ntps
+%   interpolated_times, interpolated_indices
+%   td, TFF_protein, TFF_ntps, Jcrit, Xactual, TFF_mRNA
+
 
     %% 1) Membrane geometry and base parameters
     L_all   = [20; 12];          % cm
@@ -57,24 +58,44 @@ function [ ...
     H       = 0.17;              % cm
     Acs_all = [(ID(1)/2)^2*pi; (W*H)];
 
-    %% 2) Select filter properties
-    if strcmpi(filterType, 'NOVIBRO')
-        idx       = 1;  % Hollow Fiber
+     % ---- apply geometry overrides if provided ----
+    if isfield(opts,'L_HF'),   L_all(1) = opts.L_HF; end
+    if isfield(opts,'L_VIB'),  L_all(2) = opts.L_VIB; end
+    if isfield(opts,'A_HF'),   A_all(1) = opts.A_HF; end
+    if isfield(opts,'A_VIB'),  A_all(2) = opts.A_VIB; end
+    if isfield(opts,'ID'),     ID(1)    = opts.ID;   Acs_all(1) = (ID(1)/2)^2*pi; end
+    if isfield(opts,'W'),      W        = opts.W;    Acs_all(2) = (W*H); end
+    if isfield(opts,'H'),      H        = opts.H;    Acs_all(2) = (W*H); end
+
+%% 2) Select filter properties (unchanged defaults)
+    if strcmpi(filterType, 'NOVIBRO')  % treat as HF
+        idx       = 1;
         dt        = 1e-5;
         tfinal    = 0.2;  % minutes
         L_HF      = 23.9960;
         K_HF      = 1.3333;
         n_HF      = 16.3122;
-        Jcrit_val = (L_HF * (qF^n_HF)) / (K_HF + qF);  % HF flux
-        S         = 0.24; % ret. coefficient
+        if isfield(opts,'dt'),     dt = opts.dt; end
+        if isfield(opts,'tfinal'), tfinal = opts.tfinal; end
+        if isfield(opts,'L_HF_c'), L_HF   = opts.L_HF_c; end
+        if isfield(opts,'K_HF'),   K_HF   = opts.K_HF; end
+        if isfield(opts,'n_HF'),   n_HF   = opts.n_HF; end
+        Jcrit_val = (L_HF * (qF^n_HF)) / (K_HF + qF);
+        S         = 0.24;
+        if isfield(opts,'S'), S = opts.S; end
     elseif strcmpi(filterType, 'VIBRO')
-        idx       = 2;  % Rectangular filter
+        idx       = 2;
         dt        = 1e-3;
-        tfinal    = 24;  % minutes
+        tfinal    = 24;   % minutes
         B         = 18.3417;
         n_v       = 0.8725;
-        Jcrit_val = B * (qF^n_v);   % Vibro flux
-        S         = 0.45; 
+        if isfield(opts,'dt'),     dt = opts.dt; end
+        if isfield(opts,'tfinal'), tfinal = opts.tfinal; end
+        if isfield(opts,'B'),      B  = opts.B; end
+        if isfield(opts,'n_v'),    n_v = opts.n_v; end
+        Jcrit_val = B * (qF^n_v);
+        S         = 0.45;
+        if isfield(opts,'S'), S = opts.S; end
     else
         error('Invalid filter type. Choose "HF" or "VIBRO".');
     end
@@ -85,20 +106,26 @@ function [ ...
 
     %% 3) Diffusion coefficient [cm^2/min]
     Diff = 1e-12 * 1e4 * 60;
+    if isfield(opts,'Diff'), Diff = opts.Diff; end
 
     %% 4) Retention coefficient for protein
     R = ((1 - X)^S - (1 - X)) / X;
-    s = [0.01; 1 - R; 0.99];  % ret. factors [mRNA, protein, NTPs]
+    s = [0.01; 1 - R; 0.99];   % [mRNA, protein, NTPs]
+    if isfield(opts,'s_mRNA'),  s(1) = opts.s_mRNA; end
+    if isfield(opts,'s_prot'),  s(2) = opts.s_prot; end
+    if isfield(opts,'s_ntps'),  s(3) = opts.s_ntps; end
 
     %% 5) Adjust X for critical flux
     Jcrit_mLMM = (Jcrit_val * 1e3) / 60;  % mL/(m^2·min)
     Xcrit      = (Jcrit_mLMM * A) / qF;
-    if Xcrit > 1
-        Xcrit = 0.95;
-    end
-    if Xcrit < X
+    Xcrit      = min(Xcrit, 0.95);
+    enforce = true;
+    if isfield(opts,'enforceCriticalFlux'), enforce = logical(opts.enforceCriticalFlux); end
+   
+    if enforce && (Xcrit < X)
         X = Xcrit;
     end
+
     Jactual     = X * (qF / A);
     Xactual_val = X;
 
@@ -167,13 +194,7 @@ function [ ...
     end
 
     %% 9) Extract only the protein and NTPs TFF data
-    %   The user is specifically plotting protein and NTPs vs. td.
-    %   mRNA TFF data not shown in the original code snippet, but can be added if needed.
-
-    % td_vec is appended each iteration, so it is monotonic. Flatten, unique, etc.
-    % or keep as-is if a fully appended vector is acceptable.
-
-    % For consistency, gather final arrays:
+   
     td_out = td_vec;
 
     %% 10) Prepare final outputs

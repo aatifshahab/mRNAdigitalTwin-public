@@ -5,6 +5,11 @@ import { useNavigate } from 'react-router-dom';
 import styles from './MainConfig.module.css';
 import { SimulationContext } from '../../context/SimulationContext';
 import { v4 as uuidv4 } from 'uuid';
+import { cctcDefaults, buildCctcPayload, CCTC_FIELDS } from '../../units/cctcSpec';
+import { lyoDefaults, buildLyoPayload } from '../../units/lyoSpec';
+import { membraneDefaults, MEMBRANE_FIELDS, membraneLabelFor, buildMembranePayload }  from '../../units/membraneSpec';
+
+
 
 function MainConfig() {
   // Define available units
@@ -56,8 +61,17 @@ function MainConfig() {
       uniqueId: `${unit.id}_${uuidv4()}`,
       inputs: getDefaultInputsForUnit(unit.id),
     };
+    try {
+      localStorage.setItem(`unitInputs:${newUnit.uniqueId}`, JSON.stringify(newUnit.inputs));
+    } catch {}
     setProcessFlow((prev) => [...prev, newUnit]);
   };
+
+  // label for CCTC keys: "Name (symbol)" from the unit spec
+   const cctcLabelFor = (key) => {
+     const f = CCTC_FIELDS.find(x => x.key === key);
+     return f ? `${f.label}${f.symbol ? ` (${f.symbol})` : ''}` : key;
+   };
 
   const getDefaultInputsForUnit = (unitId) => {
     switch (unitId) {
@@ -74,45 +88,26 @@ function MainConfig() {
           DNA: 7.4,
           finaltime: 2.0,
         };
+
       case 'membrane':
-        return {
-          qF: 1.0,
-          c0_mRNA: 1.0,
-          c0_protein: 0.5,
-          c0_ntps: 0.5,
-          X: 0.9,
-          n_stages: 3,
-          D: 4,
-          filterType: 'VIBRO',
-        };
+        return membraneDefaults();
+
+
       case 'cctc':
-        return {
-          F103: 1.0,
-          mRNA: 0.5,
-          resin: 0.0,
-        };
+        return cctcDefaults();
+   
       case 'lnp':
         return {
-          Residential_time: 3600.0,
+          Residential_time: 1.0,
           FRR: 3.0,
           pH: 5.5,
           Ion: 0.1,
           TF: 0.0,
           C_lipid: 10.0,
-          mRNA_in: 10.0,
+          mRNA_in: 0.05,
         };
       case 'lyo':
-        return {
-          fluidVolume: 3e-6,
-          massFractionmRNA: 0.05,
-          InitfreezingTemperature: 298.15,
-          InitprimaryDryingTemperature: 228,
-          InitsecondaryDryingTemperature: 273,
-          TempColdGasfreezing: 268,
-          TempShelfprimaryDrying: 270,
-          TempShelfsecondaryDrying: 295,
-          Pressure: 10,
-        };
+        return lyoDefaults();
       default:
         return {};
     }
@@ -121,6 +116,9 @@ function MainConfig() {
   // Remove a unit from the flow
   const removeUnit = (uniqueId) => {
     setProcessFlow((prev) => prev.filter((u) => u.uniqueId !== uniqueId));
+    try {
+      localStorage.removeItem(`unitInputs:${uniqueId}`);
+    } catch {}
   };
 
   // Open a unit in a new tab (simpler approach)
@@ -138,60 +136,68 @@ function MainConfig() {
     }
   };
 
-  // Handle chain run
-  const runChain = async () => {
-    // Show that we are running
-    setIsRunningChain(true);
-    // **Reset simulationCompleted** when a new run starts
-    setSimulationCompleted(false);
-    // **Reset error** when a new run starts
-    setError(null);
+const runChain = async () => {
+  setIsRunningChain(true);
+  setSimulationCompleted(false);
+  setError(null);
 
-    // Prepare the chain array
-    const chain = processFlow.map((unit) => ({
-      id: unit.id,
-      inputs: unit.inputs,
-      uniqueId: unit.uniqueId,
-    }));
+  // Build the payload
+const preparedChain = processFlow.map((unit) => {
+    let inputs = unit.inputs;
+    if (unit.id === 'cctc') inputs = buildCctcPayload(inputs);
+    if (unit.id === 'membrane')  inputs = buildMembranePayload(inputs);;
+    if (unit.id === 'lyo')  inputs = buildLyoPayload(inputs);   
+    return { id: unit.id, inputs, uniqueId: unit.uniqueId };
+});
 
-    try {
-      const response = await fetch(`http://127.0.0.1:8000/run_chain`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chain }),
-      });
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/run_chain`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chain: preparedChain }), 
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.error || 'An unexpected error occurred.');
-        alert(`Error: ${errorData.error || 'An unexpected error occurred.'}`);
-        setIsRunningChain(false);
-        return;
-      }
-
-      const data = await response.json();
-      console.log('Chain Results:', data.chainResults);
-
-      // Store the results in the global context
-      data.chainResults.forEach((unitRes) => {
-        addChainResult(unitRes.uniqueId, unitRes.result);
-      });
-
-      // **Set simulationCompleted to true** after successful run
-      setSimulationCompleted(true);
-    } catch (error) {
-      console.error('Error running chain:', error);
-      setError('An error occurred while running the plant simulation.');
-      alert('An error occurred while running the plant simulation.');
-    } finally {
+    if (!response.ok) {
+      const errorData = await response.json();
+      setError(errorData.error || 'An unexpected error occurred.');
+      alert(`Error: ${errorData.error || 'An unexpected error occurred.'}`);
       setIsRunningChain(false);
+      return;
     }
-  };
+
+    const data = await response.json();
+    console.log('Chain Results:', data.chainResults);
+
+    data.chainResults.forEach((unitRes) => {
+      addChainResult(unitRes.uniqueId, unitRes.result);
+    });
+
+    setSimulationCompleted(true);
+  } catch (error) {
+    console.error('Error running chain:', error);
+    setError('An error occurred while running the plant simulation.');
+    alert('An error occurred while running the plant simulation.');
+  } finally {
+    setIsRunningChain(false);
+  }
+};
+
+
 
   // Edit unit
   const editUnit = (unit) => {
+
+      // 🔧 backfill missing keys for membrane (and similarly for cctc)
+      let toEdit = unit;
+      if (unit.id === 'membrane') {
+        toEdit = { ...unit, inputs: { ...membraneDefaults(), ...unit.inputs } };
+      }
+
+      if (unit.id === 'cctc') {
+        toEdit = { ...unit, inputs: { ...cctcDefaults(), ...unit.inputs } };
+      }
     setUnitBeingEdited(unit.uniqueId);
-    // 🔧 CHANGED: store as strings so user can type decimals/partials freely
+    //store as strings so user can type decimals/partials freely
     const asStrings = Object.fromEntries(
       Object.entries(unit.inputs).map(([k, v]) => [k, v === undefined ? '' : String(v)])
     );
@@ -201,7 +207,7 @@ function MainConfig() {
   // Input changes in edit form
   const handleEditInputChange = (e, name) => {
     const value = e.target.value;
-    // 🔧 CHANGED: keep raw string while typing (no parse here)
+    // keep raw string while typing (no parse here)
     setEditedInputs((prev) => ({
       ...prev,
       [name]: value,
@@ -216,7 +222,7 @@ function MainConfig() {
       return;
     }
 
-    // 🔧 CHANGED: convert back to numbers ONLY for fields that were numbers originally
+    // convert back to numbers ONLY for fields that were numbers originally
     const coerced = Object.fromEntries(
       Object.entries(editedInputs).map(([k, v]) => {
         const wasNumber = typeof unit.inputs[k] === 'number';
@@ -238,6 +244,9 @@ function MainConfig() {
       }
       return u;
     });
+    try {
+      localStorage.setItem(`unitInputs:${unitBeingEdited}`, JSON.stringify(coerced));
+    } catch {}
 
     setProcessFlow(updatedFlow);
     setUnitBeingEdited(null);
@@ -327,17 +336,34 @@ function MainConfig() {
                 const wasNumber = typeof originalInputs[key] === 'number';
                 return (
                   <div key={key} className={styles.formGroup}>
-                    <label htmlFor={key}>{key}:</label>
-                    <input
-                      type="text"                   // 🔧 keep text to allow partials like "0.", "-.5"
-                      id={key}
-                      name={key}
-                      value={editedInputs[key] ?? ''}
-                      onChange={(e) => handleEditInputChange(e, key)}
-                      // Hint numeric keypad on mobile for numeric fields
-                      {...(wasNumber ? { inputMode: 'decimal', placeholder: 'Enter a number' } : {})}
-                    />
-                  </div>
+                    
+                    <label htmlFor={key}>
+                       {currentUnit?.id === 'cctc' ? cctcLabelFor(key) : currentUnit?.id === 'membrane' ? membraneLabelFor(key) : key}:
+                      
+                    </label>
+
+                    {currentUnit?.id === 'membrane' && key === 'filterType' ? (
+                        <select
+                            id={key}
+                            name={key}
+                            value={editedInputs[key] ?? 'VIBRO'}
+                            onChange={(e) => handleEditInputChange(e, key)}
+                        >
+                            <option value="NOVIBRO">NOVIBRO</option>
+                            <option value="VIBRO">VIBRO</option>
+                        </select>
+                        ) : (
+                        <input
+                          type="text"                   // 🔧 keep text to allow partials like "0.", "-.5"
+                          id={key}
+                          name={key}
+                          value={editedInputs[key] ?? ''}
+                          onChange={(e) => handleEditInputChange(e, key)}
+                          // Hint numeric keypad on mobile for numeric fields
+                          {...(wasNumber ? { inputMode: 'decimal', placeholder: 'Enter a number' } : {})}
+                        />
+                        )}
+                      </div>
                 );
               })}
             </form>

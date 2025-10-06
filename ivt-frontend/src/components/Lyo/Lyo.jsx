@@ -32,7 +32,7 @@ function Lyo() {
     TempShelfprimaryDrying: 270,
     TempShelfsecondaryDrying: 295,
     Pressure: 10,
-    massFractionmRNA: 0.05,
+    massFractionSolids: 0.05,
     fluidVolume: 3e-6,
   });
 
@@ -99,6 +99,10 @@ function Lyo() {
             operatingTemperature: fetched.operatingTemperature || [],
             operatingPressure: fetched.operatingPressure || [],
           });
+
+          if (fetched.inputs_used) {
+              setLyoInputs(prev => ({ ...prev, ...fetched.inputs_used }));
+            }
         }
       } catch (err) {
         console.error('Error loading Lyo chain data:', err);
@@ -126,7 +130,7 @@ function Lyo() {
     // Optional: Validate inputs
     const requiredFields = [
       'fluidVolume',
-      'massFractionmRNA',
+      'massFractionSolids',
       'InitfreezingTemperature',
       'InitprimaryDryingTemperature',
       'InitsecondaryDryingTemperature',
@@ -234,11 +238,28 @@ function Lyo() {
   // const isChainMode = !!params.get('uniqueId');
   const isChainMode = !!unitUniqueId;
 
+  // Prefill LYO inputs when opened from MainConfig 
+useEffect(() => {
+  if (!unitUniqueId) return; // only applies when opened via ?unit_uniqueId=...
+  try {
+    const raw = localStorage.getItem(`unitInputs:${unitUniqueId}`);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      setLyoInputs(prev => ({ ...prev, ...saved }));
+    }
+  } catch {
+    // ignore localStorage errors
+  }
+}, [unitUniqueId]);
+
+
+
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Lyophilization Unit</h1>
 
       {/* Navigation Buttons */}
+      {/*
       <div className={styles.navigationButtons}>
         <button onClick={openIVT} className={styles.navButton}>
           Go to IVT Unit
@@ -252,7 +273,7 @@ function Lyo() {
         <button onClick={openLNP} className={styles.navButton}>
           Go to LNP Unit
         </button>
-      </div>
+      </div> */}
 
       {isLoading && <div>Loading...</div>}
       {error && <div className={styles.errorMessage}>{error}</div>}
@@ -304,13 +325,13 @@ function Lyo() {
           {/* Run Unit Button (Standalone) */}
           {!isChainMode && (
             <div className={styles.runUnitButton}>
-              <button
+              {/*<button
                 onClick={handleRunLyo}
                 className={styles.runButton}
                 disabled={isLoading}
               >
                 {isLoading ? 'Running...' : 'Run Lyophilization Unit'}
-              </button>
+              </button>*/}
             </div>
           )}
         </>

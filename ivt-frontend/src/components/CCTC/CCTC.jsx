@@ -10,6 +10,8 @@ import CCTCOutputs from './CCTCOutputs/CCTCOutputs';
 import CCTCFigure from './CCTCFigure/CCTCFigure';
 import CCTCGraphs from './CCTCGraphs/CCTCGraphs';
 import './CCTC.css';
+import { CCTC_FIELDS, cctcDefaults, buildCctcPayload } from '../../units/cctcSpec';
+
 
 function CCTC() {
   const location = useLocation();
@@ -21,12 +23,13 @@ function CCTC() {
   // -----------------------------------
   // 1. State Management
   // -----------------------------------
-  const [cctcInputs, setCctcInputs] = useState({
-    F103: 1.0,
-    mRNA: 0.5,
-    resin: 0.2,
-  });
+ // const [cctcInputs, setCctcInputs] = useState({
+ //   F103: 1.0,
+ //   mRNA: 0.5,
+ //   resin: 0.2,
+ // });
 
+  const [cctcInputs, setCctcInputs] = useState(cctcDefaults());
   // We'll store the time arrays, etc. in cctcOutputs
   const [cctcOutputs, setCctcOutputs] = useState({
     time: [],
@@ -34,9 +37,25 @@ function CCTC() {
     bound_mRNA: [],
   });
 
-  const [selectedTag, setSelectedTag] = useState('F103');
+  // const [selectedTag, setSelectedTag] = useState('F103');
+  const [selectedTag, setSelectedTag] = useState(CCTC_FIELDS[0]?.key || 'mRNA');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+
+
+    // Prefill inputs saved in MainConfig (chain mode)
+    useEffect(() => {
+        if (!unitUniqueId) return; // only applies when opened from MainConfig
+        try {
+        const raw = localStorage.getItem(`unitInputs:${unitUniqueId}`);
+        if (raw) {
+            const saved = JSON.parse(raw);
+            setCctcInputs(prev => ({ ...prev, ...saved }));
+        }
+        } catch {
+        // ignore localStorage errors
+        }
+    }, [unitUniqueId]);
 
   // -----------------------------------
   // 2. Check for uniqueId in the URL (Chain Mode)
@@ -65,6 +84,14 @@ function CCTC() {
             bound_mRNA: fetched.bound_mRNA || [],
           });
           setError(null);
+          if (fetched.inputs_used) {
+              const used = { ...fetched.inputs_used };
+              if (Object.prototype.hasOwnProperty.call(used, 'states0_last_value')) {
+                  used.mRNA = used.states0_last_value;
+                  delete used.states0_last_value;
+              }
+              setCctcInputs(prev => ({ ...prev, ...used }));
+          }
         }
       } catch (err) {
         console.error('Error loading chain data for CCTC:', err);
@@ -78,13 +105,14 @@ function CCTC() {
   // 3. Handle Input Changes
   // -----------------------------------
   const handleCCTCInputChange = (e, name) => {
-    const value = parseFloat(e.target.value);
-    if (!isNaN(value)) {
-      setCctcInputs((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
+    const raw = e.target.value;
+    // const value = parseFloat(e.target.value);
+    // if (!isNaN(value)) {
+    setCctcInputs((prev) => ({
+      ...prev,
+      [name]: raw === '' ? '' : Number(raw),
+    }));
+    // }
   };
 
   // -----------------------------------
@@ -103,11 +131,11 @@ function CCTC() {
         {
           id: 'cctc',
           uniqueId: localUniqueId,
-          inputs: {
-            // The field your main.py chain code expects
-            states0_last_value: cctcInputs.mRNA,
-            // Optionally pass other fields if your chain logic uses them
-          },
+          inputs: buildCctcPayload(cctcInputs)
+           
+            // states0_last_value: cctcInputs.mRNA,
+            
+          
         },
       ];
 
@@ -184,12 +212,13 @@ function CCTC() {
       <h1>CCTC Unit</h1>
 
       {/* Navigation Buttons */}
+      {/*
       <div className="navigation-buttons">
         <button onClick={openIVT}>Go to IVT Unit</button>
         <button onClick={openMembrane}>Go to Membrane Unit</button>
         <button onClick={openLNP}>Go to LNP Unit</button>
         <button onClick={openLyo}>Go to Freeze-drying Unit</button>
-      </div>
+      </div> */}
 
       {/* If loading, show a simple loading message */}
       {loading && <div>Loading...</div>}

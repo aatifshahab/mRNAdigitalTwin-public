@@ -5,10 +5,7 @@ import styles from './MembraneSidebar.module.css';
 import { labelMapping } from '../../utilits/labelMapping';
 import MembraneVariableTag from '../MembraneVariableTag/MembraneVariableTag';
 
-/*
-  If you prefer, define units for each key in a separate file or inline here.
-  For example:
-*/
+
 const inputUnits = {
   qF: 'mL/min',
   c0_mRNA: 'mg/mL',
@@ -56,7 +53,7 @@ function MembraneSidebar({
                 onChange={(e) => handleInputChange(e, key)}
                 className={styles.inputField}
               >
-                <option value="HF">HF</option>
+                <option value="NOVIBRO">NOVIBRO</option>
                 <option value="VIBRO">VIBRO</option>
               </select>
             ) : (

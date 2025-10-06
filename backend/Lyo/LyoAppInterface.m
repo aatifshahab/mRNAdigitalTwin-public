@@ -1,5 +1,5 @@
 function [time1, time2, time3, time, massOfIce, boundWater, productTemperature, ...
-    operatingPressure, operatingTemperature] = LyoAppInterface(fluidVolume, massFractionmRNA, InitfreezingTemperature, ...
+    operatingPressure, operatingTemperature] = LyoAppInterface(fluidVolume, massFractionSolids, InitfreezingTemperature, ...
 InitprimaryDryingTemperature, InitsecondaryDryingTemperature, TempColdGasfreezing, ...
 TempShelfprimaryDrying, TempShelfsecondaryDrying, Pressure)
 
@@ -57,7 +57,7 @@ case 'on'
 % Parameters
 ip0 = get_inputdata;
 ip0.Vl = fluidVolume;  % user input from frontend
-ip0.xs = massFractionmRNA;  % user input from frontend
+ip0.xs = massFractionSolids;  % user input from frontend
 ip0.T01 = InitfreezingTemperature;  % user input from forntend
 ip0.T02 = InitprimaryDryingTemperature;  % user input from forntend
 ip0.T03 = InitsecondaryDryingTemperature;  % user input from forntend

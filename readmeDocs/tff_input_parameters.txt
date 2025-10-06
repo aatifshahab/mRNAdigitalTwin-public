@@ -1,0 +1,38 @@
+Membrane (TFF) — Input Parameters 
+Feed flow rate (qF)
+Unit: mL/min | Default: 1.0
+Meaning: Feed flow through the membrane module.
+Effect: Higher qF generally increases shear/flux.
+
+mRNA feed concentration (c0_mRNA)
+Unit: mg/mL | Default: 1.0
+Meaning: mRNA entering the TFF.
+Notes: In chained runs, auto-filled from upstream (IVT μM → mg/mL; CCTC g/L ≡ mg/mL).
+
+Protein feed concentration (c0_protein)
+Unit: mg/mL | Default: 0.5
+Meaning: Protein entering the TFF.
+Effect: Appears in PDE and per-stage diafiltration curves; used for impurity clearance tracking.
+
+NTPs feed concentration (c0_ntps)
+Unit: mg/mL | Default: 0.5
+Meaning: Nucleotide triphosphates entering the TFF.
+Effect: Tracked in PDE/diafiltration; typically targeted for removal during diafiltration.
+
+Desired conversion (X)
+Unit: – | Default: 0.9
+Meaning: Target fraction used to set the operating flux.
+
+Number of TFF stages (n_stages)
+Unit: – (integer) | Default: 3
+Meaning: Total stages in the diafiltration train.
+Effect: More stages enable deeper diafiltration/removal of low-retained species.
+
+Buffer flow rate (D)
+Unit: mL/min | Default: 4
+Meaning: Diafiltration buffer feed.
+Effect: Higher D accelerates washout of weakly retained species.
+
+Filter type (filterType)
+Unit: – | Default: VIBRO
+Meaning: Vibration or No vibration

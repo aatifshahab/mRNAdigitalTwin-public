@@ -1,7 +1,6 @@
-%% Main
-% 
 
-% Residential_time = 3600;%     Residential time    [s]
+
+% Residential_time = 1;%     Residential time    [s]
 % FRR = 3;%                   Flow rate ratio     [Water/Ethanol] (1~5)
 % pH = 5.5;%                  pH                  [-] (4~6)
 % Ion = 0.1;%                 Ionic concentration [M] (0.01~1)
@@ -10,26 +9,10 @@
 % mRNA_in = 10;%              mRNA                [mg/ml] (Example)
 % 
 % [Diameter, PSD, EE, mRNA_out, Fraction] = LNP(Residential_time, FRR, pH, Ion, TF, C_lipid, mRNA_in);
-% 
-% 
 
+%% 
 
-%% Plotting
-
-
-
- % figure(2)
- % plot(PSD(:, 1),PSD(:, 2), 'LineWidth', 2)
-% xlim([0 500])
-% ylim([0 1.3])
-% xlabel("Particle size [nm]", fontsize=13)
-% ylabel("Intensity-based population", fontsize=13)
-% hold on
-
-
-%%
-
-function [Diameter, PSD, EE, mRNA_out, Fraction] =  LNP(Residential_time, FRR, pH, Ion, TF, C_lipid, mRNA_in)
+function [Diameter, PSD, EE, mRNA_out, Fraction, PDI_val, Dstats] =  LNP(Residential_time, FRR, pH, Ion, TF, C_lipid, mRNA_in)
 
 
 global delta2
@@ -59,8 +42,8 @@ mRNA_out = EE*mRNA_in;
 %%
 
 init = zeros(1, M)+eps*2;
-duration = [0 Residential_time];%                 [s]
-crystal_factor = 4;%Fitting parameter               [-]
+duration = [0:Residential_time/1000:Residential_time];%                 [s]
+crystal_factor = 2;%Fitting parameter               [-]
 FRR = FRR/(FRR+1);%                                 [fraction]
 Alpha = Alpha_calc(pH, Ion, FRR)*6.5e-6;% Agglomeration effeicney [-]
   % ————————————
@@ -97,12 +80,12 @@ Vm      = 6.1e-28;                                              % Molar volume  
 kB      = 1.380E-23;                                            % Bolzmann constant         [J/K]
 
 
-x_esti = exp( (1-FRR)*log(0.0035)+FRR*log(0.00000002));         % Mole fraction solubility  [-]
-S_esti = x_esti*386/(FRR*18 + (1-FRR)*46/0.789)*1000;           % Density solubility        [kg/m3]
+x_solu = exp( (1-FRR).*log(0.0035)+FRR*log(0.00000002));         % Mole fraction solubility  [-]
+S_solu = x_solu*386*(FRR*1000/18 + (1-FRR)*789/46);             % Bulk solubility           [kg/m3]
 
-Supersaturation = max(1, lipid/S_esti);    
+Supersaturation = max(1, lipid./S_solu);    
 
-L_c     = crystal_factor*sigma*Vm/kB/294./log(Supersaturation);
+L_c     = crystal_factor.*sigma.*Vm./kB/294./log(Supersaturation);
 
 S = exp(crystal_factor*sigma*Vm/kB/294./Length');
 
@@ -116,9 +99,8 @@ Sum = max(inter_DLS)';
 Normalized = inter_DLS'./repmat(Sum, 1, 1000);
 
 
-hold on
-
 for i = 2:length(duration)
+
 
 
     mean_d(i-1) =  sum(grid2.*Normalized(i, :))/sum(Normalized(i, :))*1000000000;
@@ -134,6 +116,33 @@ Mean_density = FRR*1000 + (1-FRR)*789;%   [mg/ml]
 
 Fraction = (mRNA_out + C_lipid*(1-FRR) )/ (Mean_density);%             [-]
 
+%% Add more CQQs after reviewer comments
+% ---------- PDI (from intensity-weighted distribution at final time) ----------
+d_nm   = grid*1e9;                                % bin centers in nm (from grid in m)
+I_final = (n(end,:).*(X.^6));                     % intensity ~ d^6
+I_final = max(I_final,0);
+wI = I_final / (trapz(d_nm, I_final) + eps);      % area-normalize by integral
+
+Dz_nm = Diameter(end,2);                          % use existing Z-average (nm)
+varI  = trapz(d_nm, ((d_nm - Dz_nm).^2) .* wI);   % intensity-weighted variance
+PDI   = varI / (Dz_nm^2);                         % DLS-style relative variance
+
+% ---------- D10/D50/D90 (and D25/D75) from number-weighted PSD ----------
+N_final = max(n(end,:),0);                        % number-weighted spectrum
+wN   = N_final / (trapz(d_nm, N_final) + eps);    % area-normalize
+cdfN = cumtrapz(d_nm(:), wN(:));
+tot  = cdfN(end);
+if ~isfinite(tot) || tot <= 0
+    D10_nm = NaN; D25_nm = NaN; D50_nm = NaN; D75_nm = NaN; D90_nm = NaN;
+else
+    cdfN = cdfN ./ tot;
+    pick = @(p) d_nm( find(cdfN >= p, 1, 'first') );
+    D10_nm = pick(0.10); D25_nm = pick(0.25); D50_nm = pick(0.50);
+    D75_nm = pick(0.75); D90_nm = pick(0.90);
+end 
+
+PDI_val = PDI;
+Dstats  = [D10_nm, D50_nm, D90_nm, D25_nm, D75_nm];
 
 end
 %%

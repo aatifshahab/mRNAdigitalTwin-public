@@ -32,11 +32,20 @@ class IVTOutput(BaseModel):
     TotalRNAo: List[float]
 
 # CCTC schemas
+# class CCTCInput(BaseModel):
+#     states0_last_value: float = Field(
+#         ...,
+#         description="Last value of states0 from the IVT simulation."
+#     )
 class CCTCInput(BaseModel):
     states0_last_value: float = Field(
         ...,
-        description="Last value of states0 from the IVT simulation."
+        description="Last value of states0 from the IVT simulation (g/L)."
     )
+
+    class Config:
+        # Accept unknown/extra fields (qmax, k_ad, etc.) 
+        extra = "allow"
 
 class CCTCOutput(BaseModel):
     time: List[float]
@@ -48,7 +57,7 @@ class CCTCOutput(BaseModel):
 # Lyo schemas
 class LyoInput(BaseModel):
     fluidVolume: float  # Volume of the fluid (L)
-    massFractionmRNA: float  # Mass fraction of mRNA (kg/kg)
+    massFractionSolids: float  # Mass fraction of solids (kg/kg)
     InitfreezingTemperature: float  # Initial freezing temperature (K)
     InitprimaryDryingTemperature: float  # Initial primary drying temperature (K)
     InitsecondaryDryingTemperature: float  # Initial secondary drying temperature (K)
@@ -141,12 +150,21 @@ class LNPInput(BaseModel):
         description="lipic cncnetration [mg/ml]"
     )
 
+ 
+
 class LNPOutput(BaseModel):
-    Diameter: List[List[float]]  # Particle diameters (2D array)
-    PSD: List[List[float]]       # Particle size distribution (2D array)
-    EE: float                    # Encapsulation efficiency (dimensionless)
-    mRNA_out: float              # mRNA concentration after processing
-    error: Optional[str] = None  
+    Diameter: List[List[float]]      # time [s], Dz [nm]
+    PSD: List[List[float]]           # [diam_nm, intensity_pdf]
+    EE: float                        # Encapsulation efficiency
+    mRNA_out: float                  # mRNA conc after mixing [mg/mL]
+    Fraction: Optional[float] = None 
+    PDI: Optional[float] = None
+    D10: Optional[float] = None
+    D50: Optional[float] = None
+    D90: Optional[float] = None
+    D25: Optional[float] = None
+    D75: Optional[float] = None
+    error: Optional[str] = None
 
 
 # Serial aka chain simulation

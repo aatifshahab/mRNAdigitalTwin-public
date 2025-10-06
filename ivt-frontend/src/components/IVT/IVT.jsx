@@ -320,6 +320,27 @@ useEffect(() => {
 }, [runId, unitUniqueId, getUnitResult]);
 
 
+// Prefill IVT inputs when opened from MainConfig 
+useEffect(() => {
+  if (!unitUniqueId) return; // only applies when opened via ?unit_uniqueId=...
+  try {
+    const raw = localStorage.getItem(`unitInputs:${unitUniqueId}`);
+    if (raw) {
+      const saved = JSON.parse(raw);
+    
+      const { finaltime, ...rest } = saved ?? {};
+      if (finaltime !== undefined && !Number.isNaN(Number(finaltime))) {
+        setFinalTime(Number(finaltime));
+      }
+      // merge the rest into inputs
+      setInputs(prev => ({ ...prev, ...rest }));
+    }
+  } catch {
+    // ignore localStorage errors
+  }
+}, [unitUniqueId]);
+
+
   // Function to handle Tag click
   const handleTagClick = (variable) => {
     const { type, name } = variable;
@@ -401,12 +422,13 @@ useEffect(() => {
     <div className={styles.ivtContainer}>
       <h1 className={styles.heading}>IVT Unit</h1>
 
+      {/*}
       <div className={styles.navigationButtons}>
         <button onClick={openMembrane}>Go to Membrane Unit</button>
         <button onClick={openCCTC}>Go to CCTC Unit</button>
         <button onClick={openLNP}>Go to LNP Unit</button>
         <button onClick={openLyo}>Go to Freeze-drying Unit</button>
-      </div>
+      </div> */}
 
       <div className={styles.layout}>
         <Sidebar

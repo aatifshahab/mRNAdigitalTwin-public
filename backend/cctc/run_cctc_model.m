@@ -1,7 +1,7 @@
-function [tSol, unbound_mRNA, bound_mRNA] = run_cctc_model(states0_last_value)
+function [tSol, unbound_mRNA, bound_mRNA] = run_cctc_model(states0_last_value, overrides)
     % This version extends original function to also compute
     % the bound mRNA concentration (g/L of resin) at each time point.
-
+    if nargin < 2, overrides = struct(); end
     % --------------------- Load initial states & params ---------------------
     states0 = [];
     params  = [];
@@ -9,14 +9,45 @@ function [tSol, unbound_mRNA, bound_mRNA] = run_cctc_model(states0_last_value)
         load('func_input.mat'); 
     end
 
-    params.qmax  = 2.32;
-    params.Vbin_frac  = [0.15 0.15 0.15];
+    % params.qmax  = 2.32;
+    % params.Vbin_frac  = [0.15 0.15 0.15];
     % Overwrite the last entry of 'states0' with the provided external mRNA
     % concentration (from previous units)
+
+    % === Safe defaults (keeps current behavior) ===
+    if ~isfield(params,'qmax'),      params.qmax = 2.32;     end
+    if ~isfield(params,'K_ad_L'),    params.K_ad_L = 1.0;    end
+    if ~isfield(params,'k_ad'),      params.k_ad = 0.1;      end
+    if ~isfield(params,'D_p'),       params.D_p = 1e-10;     end
+    if ~isfield(params,'k_f'),       params.k_f = 1e-5;      end
+    if ~isfield(params,'epsilonp'),  params.epsilonp = 0.35; end
+    if ~isfield(params,'phi'),       params.phi = 0.40;      end
+    if ~isfield(params,'Vbin_frac'), params.Vbin_frac = [0.15 0.15 0.15]; end
+
+    % === Apply user overrides ===
+    fn = fieldnames(overrides);
+    for i = 1:numel(fn)
+        params.(fn{i}) = overrides.(fn{i});
+    end
+    % optional: map Vbin_frac_1..3 into vector if user provided scalars
+    for k = 1:3
+        f = sprintf('Vbin_frac_%d', k);
+        if isfield(params, f)
+            params.Vbin_frac(k) = params.(f);
+        end
+    end
+
+
     states0(end) = states0_last_value; 
 
-    % ------------------------- Time vector (seconds) ------------------------
-    t_vec = (0:60:500)';  
+    
+    % === Time control (optional overrides t_vec) ===
+    t_final_s = 500; dt_s = 60;
+    if isfield(overrides,'t_final_s'), t_final_s = overrides.t_final_s; end
+    if isfield(overrides,'dt_s'),      dt_s      = overrides.dt_s;      end
+    t_vec = (0:dt_s:t_final_s)';
+    % t_vec = (0:60:500)'; 
+
 
     % --------------------------- Solve the ODE ------------------------------
     [tSol_seconds, states_matrix] = ode15s(@(t, st) CCTC_main(st, params), t_vec, states0);

@@ -10,7 +10,7 @@ function [ ...
     TFF_protein, ...
     TFF_ntps, ...
     Jcrit, ...
-    Xactual ] = ...
+    Xactual, TFF_mRNA ] = ...
     membraneAPI(qF, c0, X, n_stages, D, filterType)
 % membraneAPI
 % Returns arrays needed for plotting:
@@ -58,7 +58,7 @@ function [ ...
     Acs_all = [(ID(1)/2)^2*pi; (W*H)];
 
     %% 2) Select filter properties
-    if strcmpi(filterType, 'HF')
+    if strcmpi(filterType, 'NOVIBRO')
         idx       = 1;  % Hollow Fiber
         dt        = 1e-5;
         tfinal    = 0.2;  % minutes
@@ -76,7 +76,7 @@ function [ ...
         Jcrit_val = B * (qF^n_v);   % Vibro flux
         S         = 0.45; 
     else
-        error('Invalid filter type. Choose "HF" or "VIBRO".');
+        error('Invalid filter type. Choose "NOVIBRO" or "VIBRO".');
     end
 
     L   = L_all(idx);
@@ -167,13 +167,7 @@ function [ ...
     end
 
     %% 9) Extract only the protein and NTPs TFF data
-    %   The user is specifically plotting protein and NTPs vs. td.
-    %   mRNA TFF data not shown in the original code snippet, but can be added if needed.
-
-    % td_vec is appended each iteration, so it is monotonic. Flatten, unique, etc.
-    % or keep as-is if a fully appended vector is acceptable.
-
-    % For consistency, gather final arrays:
+   
     td_out = td_vec;
 
     %% 10) Prepare final outputs
@@ -191,6 +185,7 @@ function [ ...
     td                   = td_out;            % appended vector
     TFF_protein          = C2TFF;             % 1×n_stages cell
     TFF_ntps             = C3TFF;             % 1×n_stages cell
+    TFF_mRNA             = C1TFF;
 
     Jcrit                = Jcrit_val;
     Xactual              = Xactual_val;
