@@ -120,6 +120,13 @@ async def run_chain(chain_request: ChainRequest):
                 else:
                     m_in = last_output['final_mRNA']
 
+                # >>> CAP TO 0.05 mg/mL <<<
+                try:
+                    m_in = float(m_in)
+                except (TypeError, ValueError):
+                    m_in = 0.05
+                m_in = min(m_in, 0.05)
+
                 inputs['mRNA_in'] = m_in
                 inputs['C_mRNA'] = m_in
                 logging.info(f"[handoff] Feeding LNP from {prev_unit}: mRNA_in={inputs['mRNA_in']}")
@@ -195,6 +202,10 @@ async def run_chain(chain_request: ChainRequest):
             elif unit_id == 'lnp':
                 if 'mRNA_in' not in inputs and 'C_mRNA' in inputs:
                     inputs['mRNA_in'] = inputs['C_mRNA']
+
+                # >>> CAP TO 0.05 mg/mL <<<
+                inputs['mRNA_in'] = min(float(inputs.get('mRNA_in', 0.05)), 0.05)
+                inputs['C_mRNA']  = inputs['mRNA_in']
                 lnp_input = LNPInput(**inputs)
                 result = run_lnp_model(**lnp_input.dict())
                 if isinstance(result, dict):

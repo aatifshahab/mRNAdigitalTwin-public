@@ -117,12 +117,13 @@ function LNP() {
 
     try {
       const localUniqueId = `lnp_${uuidv4()}`;
+      const inputsCapped = { ...inputs, mRNA_in: Math.min(Number(inputs.mRNA_in ?? 0.05), 0.05) };
       // Build the chain array with just one LNP unit
       const chain = [
         {
           id: 'lnp',
           uniqueId: localUniqueId,
-          inputs: { ...inputs },
+          inputs: inputsCapped,
         },
       ];
 

@@ -146,7 +146,11 @@ const preparedChain = processFlow.map((unit) => {
     let inputs = unit.inputs;
     if (unit.id === 'cctc') inputs = buildCctcPayload(inputs);
     if (unit.id === 'membrane')  inputs = buildMembranePayload(inputs);;
-    if (unit.id === 'lyo')  inputs = buildLyoPayload(inputs);   
+    if (unit.id === 'lyo')  inputs = buildLyoPayload(inputs);  
+    // >>> CAP LNP mRNA TO 0.05 mg/mL <<<
+    if (unit.id === 'lnp') {
+      inputs = { ...inputs, mRNA_in: Math.min(Number(inputs.mRNA_in ?? 0.05), 0.05) };
+    }
     return { id: unit.id, inputs, uniqueId: unit.uniqueId };
 });
 
