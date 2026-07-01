@@ -1,207 +1,145 @@
-# mRNA Digital Twin — Complete Local Installation Guide (Windows-first) 
+# mRNA Digital Twin
 
-## 1) Overview 
+Model and simulate a full mRNA manufacturing process: IVT → Membrane filtration → CCTC → LNP formulation → Lyophilization.
 
-The project includes: 
+## Quick Start (Recommended)
 
-- Backend API (FastAPI, Python) orchestrating unit operations and calling MATLAB models (via MATLAB Engine) and Julia code for IVT (via PyJulia). 
-- Frontend (React) to run individual units or chains. 
-- Sensitivity analysis scripts (Morris screening) for lyophilization and TFF. 
+Everything except MATLAB runs in Docker — you only need two things installed.
 
-## 2) System Requirements 
+### Prerequisites
 
-- OS: Windows 10/11 
-- RAM: 8 GB minimum (16 GB recommended) 
-- Disk: ~10 GB free 
-- MATLAB: Valid license (R2020b or later) 
+| Requirement | Notes |
+|-------------|-------|
+| **MATLAB R2020b+** with a valid license | Required for CCTC, Lyo, Membrane, LNP units |
+| **Docker Desktop** for Windows | [Install guide (includes WSL2 setup)](https://docs.docker.com/desktop/setup/install/windows-install/) |
 
-## 3) Software Prerequisites 
-
-- MATLAB R2020b+ with MATLAB Engine for Python 
-- Python: >3.9 and <3.12 (use 3.10 recommended) 
-- Julia 1.9+ (required) 
-- Node.js 20.x LTS (npm included) 
-- Git 
-
-> MATLAB Engine must be installed into a Python version supported by your MATLAB release (e.g., MATLAB R2023a supports Python 3.8–3.10). Use Python 3.10 unless you have a specific reason to use another supported version. 
-
-## 5) Step-by-Step Installation 
-
-### Step 1 — Install Git 
-
-- Download: https://git-scm.com/download/win 
-- Use default options. 
-- Verify in a new PowerShell window: 
+### Step 1 — Start the MATLAB bridge (one terminal)
 
 ```powershell
-git --version
+.\setup-matlab-bridge.ps1
 ```
-Step 2 — Clone the repository
+
+This finds your MATLAB install, sets up a Python environment, and starts a lightweight local bridge on port **8001**. Keep this window open while you use the app.
+
+> **First run only:** if PowerShell blocks the script, run this first:
+> `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`
+
+### Step 2 — Start the app (second terminal)
+
 ```powershell
-git clone https://github.com/aatifshahab/mRNAdigitalTwin.git 
+docker compose up --build
+```
+
+First build takes **10–40 minutes** (Julia packages compile once and are cached). After that, builds are fast.
+
+Open **http://localhost:3000** when it's ready.
+
+To stop: `Ctrl+C`, then `docker compose down`.
+
+### URLs
+
+| Service | URL |
+|---------|-----|
+| App (React frontend) | http://localhost:3000 |
+| Backend API / Swagger | http://localhost:8000/docs |
+| MATLAB bridge health | http://localhost:8001/health |
+
+---
+
+## Troubleshooting
+
+**"Could not reach the MATLAB bridge"** in backend logs  
+→ Step 1 is not running. Keep the `setup-matlab-bridge.ps1` window open.
+
+**MATLAB engine install fails**  
+→ Your MATLAB release may require a specific Python version. Check MathWorks' "Versions of Python Compatible with MATLAB Products" and re-run the script.
+
+**Port already in use**  
+→ Change port mappings in `docker-compose.yml` (and pass `-Port <n>` to the bridge script, keeping `MATLAB_BRIDGE_URL` in sync).
+
+**Docker Desktop — WSL not installed**  
+→ Run `wsl --install` in an elevated PowerShell, reboot, then re-open Docker Desktop.
+
+---
+
+## Sensitivity Analysis Scripts (host only)
+
+These run natively (not in Docker) and require the MATLAB bridge to be running:
+
+```powershell
+cd backend
+python sensitivity_lyo.py   # Lyophilization (Morris screening)
+python sensitivity_tff.py   # TFF / Membrane
+python sensitivity_lnp.py   # LNP formulation
+```
+
+---
+
+## Advanced — Native Install (no Docker)
+
+If you prefer to run everything natively without Docker:
+
+<details>
+<summary>Expand native install steps</summary>
+
+### Requirements
+- Windows 10/11, 8 GB RAM (16 GB recommended), ~10 GB disk
+- MATLAB R2020b+ with MATLAB Engine for Python
+- Python 3.10 (recommended; must be in MATLAB's supported range)
+- Julia 1.9+
+- Node.js 20.x LTS
+
+### 1. Clone and install dependencies
+
+```powershell
+git clone https://github.com/aatifshahab/mRNAdigitalTwin.git
 cd mRNAdigitalTwin
 ```
-Step 3 — Install Node.js (for the React frontend)
-Download Node.js 20.x LTS from: https://nodejs.org
-(Use the Windows Installer, keep the default options.)
 
-Complete the installer. When prompted, allow the installer to add Node to PATH.
-
-Open a new PowerShell/Command Prompt and verify:
+### 2. Python virtual environment
 
 ```powershell
-
-node --version 
-npm --version
-```
-You should see something like v20.x.x and 10.x.x.
-
-Step 4 — Install Python 3.10 and create a virtual environment
-Download Python 3.10 from https://www.python.org/downloads/
-
-During install: check “Add Python to PATH.”
-
-Create and activate a venv:
-
-```powershell
-py -3.10 -m venv .venv310 
-.\.venv310\Scripts\Activate.ps1 
-python --version      # should show 3.10.x 
+py -3.10 -m venv .venv310
+.\.venv310\Scripts\Activate.ps1
 python -m pip install --upgrade pip setuptools wheel
 ```
-Step 5 — Install MATLAB and the MATLAB Engine for Python
-Install MATLAB R2023a or later.
 
-With your .venv310 activated, install the engine (adjust path if needed):
+### 3. MATLAB Engine for Python
 
 ```powershell
-
-cd "C:\Program Files\MATLAB\R2023a\extern\engines\python" 
+cd "C:\Program Files\MATLAB\R2023a\extern\engines\python"
 python -m pip install .
+cd <repo root>
 ```
-Test:
-```
-powershell
-python -c "import matlab.engine as me; eng=me.start_matlab(); print(eng.sqrt(4.0)); eng.quit()"
-```
-Expected output: 2.0
 
-Step 6— Install Julia 1.9+ and link it to Python (PyJulia)
-Download from https://julialang.org/downloads/ and ensure Julia is on PATH.
-
-Verify:
+### 4. Julia + PyJulia
 
 ```powershell
+# Install Julia from https://julialang.org/downloads/ and add to PATH
+python -m pip install julia
+python -c "import julia; julia.install()"
 
-julia --version
-```
-In your .venv310, install and initialize PyJulia:
-
-```powershell
-
-cd mRNAdigitalTwin 
-
-.\.venv310\Scripts\Activate.ps1 
-
-python -m pip install julia 
-
-python -c "import julia; julia.install()" 
-
-python -c "from julia import Julia, Base; Julia(); print(Base.sqrt(9))"
-```
-Expected output: 3.0
-
-Instantiate IVT2.0/ :
-
-```powershell
-
-cd IVT2.0 
-julia -e "using Pkg; Pkg.activate(\".\"); Pkg.instantiate(); Pkg.precompile();" 
+cd IVT2.0
+julia -e "using Pkg; Pkg.activate(\".\"); Pkg.instantiate(); Pkg.precompile();"
 cd ..
 ```
-Step 7 — Backend setup (FastAPI)
-Activate your .venv310 (same one used for MATLAB Engine and PyJulia):
+
+### 5. Backend
 
 ```powershell
-
-cd backend 
-..\ .venv310\Scripts\Activate.ps1   
-python -m pip install --upgrade pip 
-python -m pip install fastapi uvicorn pydantic numpy scipy pandas matplotlib SALib
-```
- (or requirements.txt) 
-Run the backend (development mode):
-
-```powershell
-
+cd backend
+python -m pip install -r requirements.txt
 uvicorn main:app --reload
 ```
-Step 8 — Frontend setup (React)
-In a new terminal:
+
+### 6. Frontend
 
 ```powershell
-
-cd ivt-frontend 
-npm install 
+cd ivt-frontend
+npm install
 npm start
 ```
-# Running Units and Chains
-Use the React UI or Swagger (/docs) to run:
 
-Single unit (e.g., CCTC alone)
+In native mode, leave `USE_MATLAB_BRIDGE` unset — the backend uses the in-process MATLAB engine directly.
 
-Sequence (e.g., IVT → Membrane → CCTC → LNP → LYO)
-
-# Sensitivity Analyses
-Lyophilization (phase-wise Morris)
-
-Script (example): backend/sensitivity_lyo.py
-
-Outputs phase-mean product temperature (and optionally bound water) per phase
-
-Freezing prints a text summary; Primary/Secondary save μ* (±σ) bar plots
-
-Run:
-
-```powershell
-
-cd backend 
-python sensitivity_lyo.py
-```
-TFF / Membrane (Morris)
-
-Script: backend/sensitivity_tff.py
-
-Varies qF, D, c0_mRNA (conversion X fixed at 0.90)
-
-Saves μ* (±σ) bar chart
-
-Run:
-
-```powershell
-python sensitivity_tff.p
-```
-# Troubleshooting
-MATLAB Engine import fails
-
-Confirm you installed the engine into this venv and Python is in MATLAB’s supported range.
-
-Quick check:
-
-```powershell
-python -c "import matlab.engine"
-``` 
-PyJulia / julia.install() errors
-
-Ensure julia is on PATH (where julia).
-
-Re-run:
-
-```powershell
-python -c "import julia; julia.install()"
-```
-If needed, rebuild PyCall from Julia:
-
-```powershell
-julia -e "using Pkg; Pkg.build(\"PyCall\")"
-```
+</details>

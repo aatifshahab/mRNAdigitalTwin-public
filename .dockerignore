@@ -1,0 +1,16 @@
+# Backend build context = repo root. Keep backend/ and IVT2.0/ (incl. IVT2.0/outputs
+# CSVs the Julia model reads). Exclude VCS, caches, virtualenvs and the frontend's
+# node_modules so the image build stays lean.
+.git
+.gitignore
+**/__pycache__
+**/*.pyc
+.venv
+.venv*
+**/.venv
+**/.ipynb_checkpoints
+ivt-frontend/node_modules
+ivt-frontend/build
+*.db
+README.md
+QUICKSTART-DOCKER.md

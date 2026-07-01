@@ -1,0 +1,7 @@
+# Dependencies for the host-side MATLAB bridge (matlab_bridge.py).
+# The MATLAB Engine for Python is installed separately by setup-matlab-bridge.ps1
+# from your local MATLAB installation (it is not available on PyPI).
+fastapi
+uvicorn[standard]
+pydantic
+numpy

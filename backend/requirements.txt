@@ -1,4 +1,24 @@
+# Backend Python dependencies (used by the Docker image and native installs).
+#
+# NOTE: the MATLAB Engine for Python is intentionally NOT listed here. It cannot
+# be installed from PyPI and is licensed software. In the Docker setup MATLAB is
+# reached over HTTP via the host "matlab-bridge" (see matlab_client.py); in a
+# native install you install the engine separately from your MATLAB folder.
+
+# Web framework / server
 fastapi
-uvicorn
+uvicorn[standard]
 pydantic
 
+# Scientific stack used by the models, conversions and sensitivity scripts
+numpy
+scipy
+pandas
+matplotlib
+SALib
+
+# Julia bridge for the IVT model (PyJulia)
+julia
+
+# HTTP client used by the backend container to call the host MATLAB bridge
+requests

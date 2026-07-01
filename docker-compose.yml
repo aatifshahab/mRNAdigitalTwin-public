@@ -1,0 +1,37 @@
+# mRNA Digital Twin — one-command app (backend + frontend in Docker).
+#
+# MATLAB stays on the HOST. Start it first with:  ./setup-matlab-bridge.ps1
+# Then bring the app up with:                     docker compose up
+#
+# The backend talks to the host's MATLAB bridge via host.docker.internal:8001.
+
+services:
+  backend:
+    build:
+      context: .                      # repo root: image needs backend/ AND IVT2.0/
+      dockerfile: backend/Dockerfile
+    image: mrna-backend
+    ports:
+      - "8000:8000"                   # browser/frontend reach the API at 127.0.0.1:8000
+    environment:
+      USE_MATLAB_BRIDGE: "1"
+      MATLAB_BRIDGE_URL: "http://host.docker.internal:8001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # lets the container reach the host (Linux too)
+    volumes:
+      - backend-data:/app/backend/data        # persist runs.db / outputs across restarts
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./ivt-frontend
+      dockerfile: Dockerfile
+    image: mrna-frontend
+    ports:
+      - "3000:80"                     # open http://localhost:3000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend-data:

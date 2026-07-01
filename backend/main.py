@@ -6,7 +6,7 @@ from typing import Dict
 from fastapi import HTTPException
 
 from julia_interface import run_ivt_process
-from matlab_interface import run_cctc_model, run_lyo_model, run_membrane_model, run_lnp_model
+from matlab_provider import run_cctc_model, run_lyo_model, run_membrane_model, run_lnp_model
 from schemas import (
     IVTInput, IVTOutput,
     CCTCInput, CCTCOutput,
